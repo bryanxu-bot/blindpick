@@ -230,6 +230,13 @@ html, body {
   color: white; font-size: 18px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+.copy-link-btn {
+  width: auto; height: 40px; border-radius: 20px; padding: 0 20px;
+  font-size: 14px; font-weight: 600;
+}
+.copy-link-btn.copied {
+  background: rgba(0,184,148,.4); border-color: rgba(0,184,148,.5);
+}
 
 /* ═══════════════ Confetti ═══════════════ */
 .confetti {
@@ -352,6 +359,7 @@ html, body {
     <canvas id="shareCanvas" style="display:none"></canvas>
     <img id="shareImg" src="" alt="盲选餐厅入口卡" onclick="event.stopPropagation()" style="display:none" />
     <div class="share-save-hint" id="shareHint" style="display:none">👆 长按图片 → 保存到相册</div>
+    <button class="share-overlay-close copy-link-btn" id="shareCopyLink" onclick="event.stopPropagation();copyResultLink()" style="display:none">📋 复制链接</button>
     <button class="share-overlay-close" onclick="hideShare()">✕</button>
   </div>
 
@@ -792,7 +800,11 @@ async function showShare() {
 
   try {
 
-  const W = 720, H = 880, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
+  const W = 720, H = 880
+  const pick = state.currentPick
+  const shareUrl = pick
+    ? `https://bryanxu-bot.github.io/blindpick/?pick=${encodeURIComponent(JSON.stringify(pick))}`
+    : 'https://bryanxu-bot.github.io/blindpick/'
   const canvas = document.getElementById('shareCanvas')
   const ctx = canvas.getContext('2d')
   canvas.width = W; canvas.height = H
@@ -862,7 +874,7 @@ async function showShare() {
   const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
   const qrCanvas = document.createElement('canvas')
   qrCanvas.width = qrW; qrCanvas.height = qrW
-  await QRCode.toCanvas(qrCanvas, APP_URL, { width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' } })
+  await QRCode.toCanvas(qrCanvas, shareUrl, { width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' } })
   ctx.drawImage(qrCanvas, qrX, qrY, qrW, qrW)
 
   ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
@@ -888,10 +900,12 @@ async function showShare() {
   shareCardUrl = canvas.toDataURL('image/png')
   const img = document.getElementById('shareImg')
   const hint = document.getElementById('shareHint')
+  const copyBtn = document.getElementById('shareCopyLink')
   img.src = shareCardUrl
   img.style.display = 'block'
   hint.textContent = '👆 长按图片 → 保存到相册'
   hint.style.display = 'block'
+  copyBtn.style.display = 'flex'
 
   } catch(e) {
     console.error('Share card draw failed:', e)
@@ -904,6 +918,32 @@ async function showShare() {
 function hideShare(e) {
   if (e && e.target !== e.currentTarget) return
   document.getElementById('shareOverlay').classList.remove('show')
+  // Reset copy link button state
+  const btn = document.getElementById('shareCopyLink')
+  btn.style.display = 'none'
+  btn.classList.remove('copied')
+  btn.textContent = '📋 复制链接'
+}
+
+// ── Copy result link ──
+async function copyResultLink() {
+  const pick = state.currentPick
+  if (!pick) { showToast('没有可分享的结果'); return }
+  const url = `https://bryanxu-bot.github.io/blindpick/?pick=${encodeURIComponent(JSON.stringify(pick))}`
+  try {
+    await navigator.clipboard.writeText(url)
+    const btn = document.getElementById('shareCopyLink')
+    btn.textContent = '✅ 链接已复制'
+    btn.classList.add('copied')
+    showToast('链接已复制，发给朋友吧！')
+    setTimeout(() => {
+      btn.textContent = '📋 复制链接'
+      btn.classList.remove('copied')
+    }, 2500)
+  } catch(e) {
+    // Fallback for older browsers / non-HTTPS
+    prompt('复制以下链接发给朋友：', url)
+  }
 }
 
 // ── Confetti ──

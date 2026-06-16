@@ -790,7 +790,7 @@ function renderResult(pick) {
   const dpLink = document.getElementById('dpLink')
   dpLink.href = dpWeb
   dpLink.target = '_blank'
-  dpLink.rel = 'noopener'
+  dpLink.rel = 'noreferrer noopener'
   dpLink.textContent = `🔍 打开大众点评查看「${pick.name}」真实评价 →`
   // 尝试唤起 App（iframe 方式，不离开页面）
   dpLink.onclick = function(e) {

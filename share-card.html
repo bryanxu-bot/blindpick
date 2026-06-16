@@ -27,7 +27,7 @@ body{
 
 #cardImg{
   display:block;width:92vw;max-width:360px;
-  aspect-ratio:720/880;
+  aspect-ratio:720/680;
   object-fit:contain;
   border-radius:24px;box-shadow:0 16px 48px rgba(0,0,0,.1);
   position:relative;z-index:1;
@@ -110,9 +110,8 @@ body{
   <button class="close" id="modalClose">✕</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>
-const W = 720, H = 880, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
+const W = 720, H = 680, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
 const canvas = document.getElementById('card')
 const ctx = canvas.getContext('2d')
 canvas.width = W; canvas.height = H
@@ -175,7 +174,7 @@ function drawFoodAccents(ctx, cx, cy) {
   })
 }
 
-async function draw() {
+function draw() {
   // Background
   const bg = ctx.createLinearGradient(0, 0, W * 0.4, H * 0.45)
   bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.4, '#FF5E2C'); bg.addColorStop(1, '#E84313')
@@ -260,20 +259,23 @@ async function draw() {
   ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
   ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
-  // ── QR code 320×320 (temp square canvas, zero distortion) ──
-  const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
-  const qrCanvas = document.createElement('canvas')
-  qrCanvas.width = qrW; qrCanvas.height = qrW
-  await QRCode.toCanvas(qrCanvas, APP_URL, {
-    width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' }
-  })
-  ctx.drawImage(qrCanvas, qrX, qrY, qrW, qrW)
-
-  ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
-  ctx.fillText('微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)
+  // ── URL display (no QR) ──
+  const urlY = cY + 120
+  // URL box
+  ctx.fillStyle = '#FFF5EE'
+  ctx.beginPath(); roundRect(ctx, 80, urlY, W - 160, 72, 16); ctx.fill()
+  ctx.strokeStyle = '#F0D8C0'; ctx.lineWidth = 1.5
+  ctx.beginPath(); roundRect(ctx, 80, urlY, W - 160, 72, 16); ctx.stroke()
+  // URL text
+  ctx.font = 'bold 24px "PingFang SC","Hiragino Sans GB",sans-serif'
+  ctx.fillStyle = '#E8551A'; ctx.textAlign = 'center'
+  ctx.fillText(APP_URL.replace('https://', ''), W / 2, urlY + 32)
+  // Hint
+  ctx.font = '13px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
+  ctx.fillText('在浏览器打开，开始盲选', W / 2, urlY + 56)
 
   // Features row
-  const fY = qrY + qrW + 58
+  const fY = cY + 220
   ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
   ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
 

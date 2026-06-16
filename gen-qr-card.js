@@ -98,7 +98,7 @@ async function main() {
   ctx.font = 'bold 28px PingFang'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
   ctx.fillText('今天吃什么？', W / 2, cY + 50)
   ctx.font = '17px PingFang'; ctx.fillStyle = '#636E72'
-  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 84)
+  ctx.fillText('一键盲选周边 5km 好评餐厅，匹配你的口味', W / 2, cY + 84)
 
   // QR
   const qrW = 240, qrX = (W - qrW) / 2, qrY = cY + 108
@@ -117,7 +117,7 @@ async function main() {
   ctx.beginPath(); ctx.moveTo(50, featY - 16); ctx.lineTo(W - 50, featY - 16); ctx.stroke()
 
   const feats = [
-    { i: '◉', t: '周边3km' },   // ◎
+    { i: '◉', t: '周边5km' },   // ◎
     { i: '★', t: '好评筛选' },   // ★
     { i: '◇', t: '盲盒惊喜' },   // ◇
     { i: '⇧', t: '分享好友' }    // ⇧

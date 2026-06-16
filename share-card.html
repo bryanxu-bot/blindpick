@@ -258,7 +258,7 @@ async function draw() {
   ctx.font = 'bold 28px "PingFang SC",sans-serif'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
   ctx.fillText('今天吃什么？', W / 2, cY + 48)
   ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
-  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
+  ctx.fillText('一键盲选周边 5km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
   // ── QR code 320×320 ──
   const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
@@ -278,7 +278,7 @@ async function draw() {
   ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
 
   const feats = [
-    { i: '📍', t: '周边3km' }, { i: '⭐', t: '好评筛选' },
+    { i: '📍', t: '周边5km' }, { i: '⭐', t: '好评筛选' },
     { i: '🎰', t: '盲盒惊喜' }, { i: '📤', t: '分享好友' }
   ]
   const gap = (W - 60) / feats.length

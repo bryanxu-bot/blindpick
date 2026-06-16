@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>盲选餐厅 - 今天吃什么？扫码一键盲选</title>
-<meta name="description" content="一键盲选周边3km好评餐厅，匹配你的口味。扫码来玩！">
+<meta name="description" content="一键盲选周边5km好评餐厅，匹配你的口味。扫码来玩！">
 
 <!-- Open Graph for WeChat share preview -->
 <meta property="og:title" content="盲选餐厅 - 今天吃什么？">
-<meta property="og:description" content="一键盲选周边3km好评餐厅，匹配你的口味。扫码来玩！">
+<meta property="og:description" content="一键盲选周边5km好评餐厅，匹配你的口味。扫码来玩！">
 <meta property="og:image" content="https://bryanxu-bot.github.io/blindpick/qr-card.png?v=2">
 <meta property="og:image:width" content="720">
 <meta property="og:image:height" content="880">
@@ -287,7 +287,7 @@ html, body {
     </div>
 
     <div class="hint">
-      周边 <strong>3km</strong> · 评分 <strong>≥ 3.8</strong><br>根据你的口味，随机但靠谱
+      周边 <strong>5km</strong> · 评分 <strong>≥ 3.8</strong><br>根据你的口味，随机但靠谱
     </div>
 
     <div id="homeError" style="display:none;margin-top:20px;text-align:center;">
@@ -364,7 +364,7 @@ html, body {
 // ── Constants ──
 const AMAP_KEY = '2983fd157338ddfaa42a930eb10a25c9'
 const AMAP_HOST = 'https://restapi.amap.com'
-const RADIUS = 3000
+const RADIUS = 5000
 
 // ── State ──
 let state = {
@@ -395,7 +395,7 @@ const FALLBACK = [
   { name:'小笼传奇', cuisine:'江浙菜', rating:4.6, distanceRaw:800, cost:'¥38/人', emoji:'🥟', ai:'现点现包现蒸，小笼包皮薄到透光，汤汁鲜甜不腻。蟹粉小笼9-11月限季，来了一定要点。' },
   { name:'深夜韩食堂', cuisine:'韩式', rating:4.4, distanceRaw:1500, cost:'¥72/人', emoji:'🥩', ai:'老板釜山人，炸鸡外酥里嫩。芝士排骨拉丝能拉到天花板，拍照发朋友圈秒出片。' },
   { name:'素食星球', cuisine:'素食', rating:4.8, distanceRaw:2800, cost:'¥55/人', emoji:'🥗', ai:'素排骨用藕段和面筋模拟，肉食主义者都惊艳。侘寂风环境，拍照超出片。' },
-  { name:'潮汕鲜牛肉', cuisine:'潮汕', rating:4.2, distanceRaw:3000, cost:'¥95/人', emoji:'🥓', ai:'牛肉屠宰到上桌不超4小时，匙柄五花趾必点。沙茶酱自己熬，比外面的香一倍。' },
+  { name:'潮汕鲜牛肉', cuisine:'潮汕', rating:4.2, distanceRaw:5000, cost:'¥95/人', emoji:'🥓', ai:'牛肉屠宰到上桌不超4小时，匙柄五花趾必点。沙茶酱自己熬，比外面的香一倍。' },
   { name:'成都冒菜王', cuisine:'川菜', rating:4.0, distanceRaw:400, cost:'¥32/人', emoji:'🥘', ai:'科技园打工人午餐食堂，冒菜汤底香辣回甘，牛肉毛肚给得很大方。唯一缺点排队太长。' },
   { name:'鳗鱼饭专门店', cuisine:'日料', rating:4.9, distanceRaw:2400, cost:'¥138/人', emoji:'🍱', ai:'活鳗现杀炭烤，皮脆肉嫩。名古屋三吃法——原味、加山葵海苔、茶泡饭，仪式感拉满。' },
   { name:'云南小厨', cuisine:'云南菜', rating:4.3, distanceRaw:1100, cost:'¥58/人', emoji:'🍄', ai:'汽锅鸡汤清如水鲜掉眉毛，云南空运松茸竹荪。过桥米线仪式感强，汤碗端上来还在翻滚。' },
@@ -856,7 +856,7 @@ async function showShare() {
   ctx.font = 'bold 28px "PingFang SC",sans-serif'; ctx.fillStyle = '#2D3436'
   ctx.fillText('今天吃什么？', W / 2, cY + 48)
   ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
-  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
+  ctx.fillText('一键盲选周边 5km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
   // QR
   const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
@@ -873,7 +873,7 @@ async function showShare() {
   ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
   ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
 
-  const feats = [{i:'📍',t:'周边3km'},{i:'⭐',t:'好评筛选'},{i:'🎰',t:'盲盒惊喜'},{i:'📤',t:'分享好友'}]
+  const feats = [{i:'📍',t:'周边5km'},{i:'⭐',t:'好评筛选'},{i:'🎰',t:'盲盒惊喜'},{i:'📤',t:'分享好友'}]
   const gap = (W - 60) / feats.length
   feats.forEach((f, j) => {
     const fx = 30 + gap * j + gap / 2

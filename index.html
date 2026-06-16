@@ -774,10 +774,23 @@ function drawBowlIconSC(ctx, cx, cy, s) {
   }
 }
 
-let shareCardDrawn = false
+let shareCardUrl = null
 async function showShare() {
   document.getElementById('shareOverlay').classList.add('show')
-  if (shareCardDrawn) return
+
+  // Already drawn — just show cached
+  if (shareCardUrl) {
+    document.getElementById('shareImg').src = shareCardUrl
+    document.getElementById('shareImg').style.display = 'block'
+    document.getElementById('shareHint').style.display = 'block'
+    return
+  }
+
+  // Show loading
+  document.getElementById('shareHint').textContent = '⏳ 正在生成...'
+  document.getElementById('shareHint').style.display = 'block'
+
+  try {
 
   const W = 720, H = 880, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
   const canvas = document.getElementById('shareCanvas')
@@ -871,14 +884,21 @@ async function showShare() {
   ctx.font = '12px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
   ctx.fillText('让每一餐都有惊喜', W / 2, H - 26)
 
-  // Show as img for long-press save (canvas long-press doesn't work on mobile)
+  // Show as img for long-press save
+  shareCardUrl = canvas.toDataURL('image/png')
   const img = document.getElementById('shareImg')
   const hint = document.getElementById('shareHint')
-  img.src = canvas.toDataURL('image/png')
+  img.src = shareCardUrl
   img.style.display = 'block'
+  hint.textContent = '👆 长按图片 → 保存到相册'
   hint.style.display = 'block'
 
-  shareCardDrawn = true
+  } catch(e) {
+    console.error('Share card draw failed:', e)
+    document.getElementById('shareImg').style.display = 'none'
+    document.getElementById('shareHint').textContent = '生成失败，请重试'
+    document.getElementById('shareHint').style.display = 'block'
+  }
 }
 
 function hideShare(e) {

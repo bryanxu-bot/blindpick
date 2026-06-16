@@ -2,110 +2,285 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>盲选餐厅 - 扫码体验</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#fef5ec;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:16px;gap:16px}
-canvas{display:block;width:92vw;max-width:360px;height:auto;border-radius:24px;box-shadow:0 12px 48px rgba(0,0,0,.12)}
-.btn{width:92vw;max-width:360px;height:52px;border-radius:16px;border:none;background:linear-gradient(135deg,#FF6B35,#E8551A);color:white;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,107,53,.3);display:flex;align-items:center;justify-content:center;gap:8px}
-.btn:active{transform:scale(.97)}
-.hint{font-size:12px;color:#B2BEC3;text-align:center}
+body{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;background:#fef5ec;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+  padding:20px 16px;gap:18px;overflow-x:hidden;
+}
+
+/* ── Floating orbs (CSS) ── */
+.orbs{position:fixed;inset:0;pointer-events:none;z-index:0}
+.orb{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,107,53,.18),transparent 70%);
+  animation-timing-function:ease-in-out;animation-iteration-count:infinite;
+}
+.orb.a{width:140px;height:140px;top:8%;left:-40px;animation-name:floatA;animation-duration:7s}
+.orb.b{width:100px;height:100px;top:55%;right:-30px;animation-name:floatB;animation-duration:6s;animation-delay:-2s}
+.orb.c{width:90px;height:90px;top:25%;left:65%;animation-name:floatC;animation-duration:8s;animation-delay:-4s}
+@keyframes floatA{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-24px) scale(1.08)}}
+@keyframes floatB{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.06)}}
+@keyframes floatC{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-28px) scale(1.1)}}
+
+/* ── Canvas ── */
+canvas{
+  display:block;width:92vw;max-width:360px;height:auto;
+  border-radius:24px;box-shadow:0 16px 48px rgba(0,0,0,.1);
+  position:relative;z-index:1;
+}
+
+/* ── Button ── */
+.btn{
+  width:92vw;max-width:360px;height:54px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,#FF6B35,#E8551A);
+  color:white;font-size:17px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 24px rgba(255,107,53,.28);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  position:relative;z-index:1;
+  transition:transform .15s,box-shadow .15s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+}
+.btn:active{transform:scale(.96);box-shadow:0 2px 12px rgba(255,107,53,.18)}
+
+/* ── Hint ── */
+.hint{font-size:12px;color:#B2BEC3;text-align:center;position:relative;z-index:1}
+
+/* ── Save Modal ── */
+.modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:999;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;gap:18px;
+}
+.modal.show{display:flex}
+.modal-img{
+  width:82vw;max-width:380px;border-radius:20px;
+  box-shadow:0 24px 64px rgba(0,0,0,.35);
+  animation:popIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-tip{
+  color:white;font-size:15px;font-weight:600;text-align:center;
+  background:rgba(255,255,255,.14);padding:12px 24px;border-radius:14px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  letter-spacing:.5px;
+}
+.modal-close{
+  width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.12);color:white;font-size:22px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  transition:background .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.modal-close:active{background:rgba(255,255,255,.25)}
 </style>
 </head>
 <body>
+
+<!-- Floating background orbs -->
+<div class="orbs">
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+  <div class="orb c"></div>
+</div>
+
 <canvas id="card"></canvas>
-<button class="btn" onclick="save()">💾 保存到相册</button>
+<button class="btn" id="saveBtn">💾 保存到相册</button>
 <div class="hint">保存后发朋友圈 / 微信群，别人扫码就能玩</div>
+
+<!-- Save modal -->
+<div class="modal" id="modal">
+  <img class="modal-img" id="modalImg" src="" alt="盲选餐厅入口卡" />
+  <div class="modal-tip">👆 长按图片 → 保存到相册</div>
+  <button class="modal-close" id="modalClose">✕</button>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>
-const W=720,H=980,url='https://bryanxu-bot.github.io/blindpick/'
-const canvas=document.getElementById('card'),ctx=canvas.getContext('2d')
-canvas.width=W;canvas.height=H
+const W = 720, H = 980
+const URL = 'https://bryanxu-bot.github.io/blindpick/'
+const canvas = document.getElementById('card')
+const ctx = canvas.getContext('2d')
+canvas.width = W; canvas.height = H
 
-async function draw(){
-  // 背景
-  const bg=ctx.createLinearGradient(0,0,W*.5,H*.35)
-  bg.addColorStop(0,'#FF7B42');bg.addColorStop(.5,'#FF5E2C');bg.addColorStop(1,'#E84313')
-  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H)
+// ── Particles ──
+const PARTICLES = 30
+let particles = []
+let qrImg = null  // cached QR image
 
-  // 点阵
-  ctx.fillStyle='rgba(255,255,255,.1)'
-  for(let x=14;x<W;x+=18)for(let y=14;y<H;y+=18){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill()}
+function initParticles() {
+  particles = []
+  for (let i = 0; i < PARTICLES; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * 330,        // orange area only
+      r: Math.random() * 2.2 + 0.8,
+      speed: Math.random() * 0.35 + 0.08,
+      alpha: Math.random() * 0.14 + 0.04,
+      phase: Math.random() * Math.PI * 2
+    })
+  }
+}
 
-  // 装饰圆
-  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=2
-  ctx.beginPath();ctx.arc(W+40,-80,240,0,Math.PI*2);ctx.stroke()
-  ctx.beginPath();ctx.arc(W+60,-100,300,0,Math.PI*2);ctx.stroke()
+// ── Round rect helper ──
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r)
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r)
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r)
+  ctx.closePath()
+}
 
-  // Hero
-  const hY=160
-  ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.arc(W/2,hY,62,0,Math.PI*2);ctx.fill()
-  ctx.font='54px sans-serif';ctx.textAlign='center';ctx.fillText('🥘',W/2,hY+20)
-  ctx.font='bold 13px "PingFang SC","Helvetica Neue",sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText('TODAY\'S PICK',W/2,hY+112)
-  ctx.font='bold 50px "PingFang SC","Hiragino Sans GB",sans-serif';ctx.fillStyle='white';ctx.fillText('盲选餐厅',W/2,hY+178)
+// ── Draw one frame (sync, no QR regeneration) ──
+function drawFrame(time) {
+  const t = time * 0.001
+  ctx.clearRect(0, 0, W, H)
 
-  // 白色卡片
-  const cX=28,cY=370,cW=W-56,cH=H-cY-26
-  ctx.fillStyle='#FFFBF5'
-  ctx.beginPath();roundRect(ctx,cX,cY,cW,cH,26);ctx.fill()
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, W * 0.5, H * 0.35)
+  bg.addColorStop(0, '#FF7B42')
+  bg.addColorStop(0.5, '#FF5E2C')
+  bg.addColorStop(1, '#E84313')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, W, H)
 
-  // 虚线
-  ctx.strokeStyle='#E8D5C4';ctx.lineWidth=1.5;ctx.setLineDash([7,5])
-  ctx.beginPath();ctx.moveTo(cX+24,cY);ctx.lineTo(cX+cW-24,cY);ctx.stroke();ctx.setLineDash([])
+  // Animated floating particles (orange area)
+  for (const p of particles) {
+    const alpha = p.alpha + Math.sin(t * 1.5 + p.phase) * 0.04
+    ctx.fillStyle = `rgba(255,255,255,${Math.max(0.02, alpha)})`
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill()
+  }
 
-  // 描述
-  ctx.font='bold 30px "PingFang SC",sans-serif';ctx.fillStyle='#2D3436';ctx.textAlign='center'
-  ctx.fillText('今天吃什么？',W/2,cY+58)
-  ctx.font='18px "PingFang SC",sans-serif';ctx.fillStyle='#636E72'
-  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味',W/2,cY+96)
+  // Static subtle dot grid (entire canvas)
+  ctx.fillStyle = 'rgba(255,255,255,.05)'
+  for (let x = 16; x < W; x += 24) {
+    for (let y = 16; y < H; y += 24) {
+      ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill()
+    }
+  }
 
-  // QR
-  const qrW=264,qrX=(W-qrW)/2,qrY=cY+124
-  const qrData=await QRCode.toDataURL(url,{width:qrW,margin:2,color:{dark:'#E8551A',light:'#FFFBF5'}})
-  const qrImg=new Image()
-  await new Promise((resolve)=>{qrImg.onload=resolve;qrImg.src=qrData})
-  ctx.drawImage(qrImg,qrX,qrY,qrW,qrW)
+  // Large decorative circles (off-screen)
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(W + 40, -80, 240, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(W + 60, -100, 300, 0, Math.PI * 2); ctx.stroke()
 
-  ctx.font='15px "PingFang SC",sans-serif';ctx.fillStyle='#B2BEC3'
-  ctx.fillText('📱 微信扫码 → 开始盲选',W/2,qrY+qrW+36)
+  // ── Hero ──
+  const hY = 130
+  // Glow ring behind emoji
+  const glowAlpha = 0.16 + Math.sin(t * 2) * 0.04  // subtle pulse
+  ctx.fillStyle = `rgba(255,255,255,${glowAlpha})`
+  ctx.beginPath(); ctx.arc(W / 2, hY, 58, 0, Math.PI * 2); ctx.fill()
+  // Emoji
+  ctx.font = '48px sans-serif'; ctx.textAlign = 'center'
+  ctx.fillText('🥘', W / 2, hY + 17)
+  // Subtitle
+  ctx.font = 'bold 12px "PingFang SC","Helvetica Neue",sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,.7)'
+  ctx.fillText('TODAY\'S PICK', W / 2, hY + 95)
+  // Title
+  ctx.font = 'bold 46px "PingFang SC","Hiragino Sans GB",sans-serif'
+  ctx.fillStyle = 'white'
+  ctx.fillText('盲选餐厅', W / 2, hY + 155)
 
-  // 功能
-  const fY=qrY+qrW+76
-  ctx.strokeStyle='#F0E8DC';ctx.lineWidth=1
-  ctx.beginPath();ctx.moveTo(50,fY-20);ctx.lineTo(W-50,fY-20);ctx.stroke()
+  // ── White card ──
+  const cX = 28, cY = 320, cW = W - 56, cH = H - cY - 26
+  ctx.fillStyle = '#FFFBF5'
+  ctx.beginPath(); roundRect(ctx, cX, cY, cW, cH, 26); ctx.fill()
 
-  const feats=[{i:'📍',t:'周边3km'},{i:'⭐',t:'好评筛选'},{i:'🎰',t:'盲盒惊喜'},{i:'📤',t:'分享好友'}]
-  const gap=(W-60)/feats.length
-  feats.forEach((f,j)=>{
-    const fx=30+gap*j+gap/2
-    ctx.font='30px sans-serif';ctx.textAlign='center';ctx.fillText(f.i,fx,fY+20)
-    ctx.font='15px "PingFang SC",sans-serif';ctx.fillStyle='#636E72';ctx.fillText(f.t,fx,fY+52)
+  // Dashed top divider
+  ctx.strokeStyle = '#E8D5C4'; ctx.lineWidth = 1.5; ctx.setLineDash([7, 5])
+  ctx.beginPath(); ctx.moveTo(cX + 24, cY); ctx.lineTo(cX + cW - 24, cY); ctx.stroke()
+  ctx.setLineDash([])
+
+  // Description
+  ctx.font = 'bold 28px "PingFang SC",sans-serif'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
+  ctx.fillText('今天吃什么？', W / 2, cY + 50)
+  ctx.font = '17px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
+  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 84)
+
+  // QR code (cached)
+  if (qrImg) {
+    const qrW = 240, qrX = (W - qrW) / 2, qrY = cY + 108
+    ctx.drawImage(qrImg, qrX, qrY, qrW, qrW)
+
+    ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
+    ctx.fillText('📱 微信扫码 → 开始盲选', W / 2, qrY + qrW + 32)
+
+    // Features
+    const fY = qrY + qrW + 68
+    ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(50, fY - 16); ctx.lineTo(W - 50, fY - 16); ctx.stroke()
+
+    const feats = [
+      { i: '📍', t: '周边3km' }, { i: '⭐', t: '好评筛选' },
+      { i: '🎰', t: '盲盒惊喜' }, { i: '📤', t: '分享好友' }
+    ]
+    const gap = (W - 60) / feats.length
+    feats.forEach((f, j) => {
+      const fx = 30 + gap * j + gap / 2
+      ctx.font = '28px sans-serif'; ctx.textAlign = 'center'
+      ctx.fillText(f.i, fx, fY + 18)
+      ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
+      ctx.fillText(f.t, fx, fY + 46)
+    })
+  }
+
+  // Footer
+  ctx.font = '12px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
+  ctx.fillText('让每一餐都有惊喜', W / 2, H - 28)
+}
+
+// ── Animation loop ──
+function animate(time) {
+  // Update particle positions
+  for (const p of particles) {
+    p.y -= p.speed
+    if (p.y < -10) { p.y = 332; p.x = Math.random() * W }
+  }
+  drawFrame(time)
+  requestAnimationFrame(animate)
+}
+
+// ── Init ──
+async function init() {
+  // Generate QR once
+  const qrData = await QRCode.toDataURL(URL, {
+    width: 240, margin: 2,
+    color: { dark: '#E8551A', light: '#FFFBF5' }
   })
+  qrImg = new Image()
+  await new Promise(resolve => { qrImg.onload = resolve; qrImg.src = qrData })
 
-  // 底部
-  ctx.font='13px "PingFang SC",sans-serif';ctx.fillStyle='#B2BEC3';ctx.textAlign='center'
-  ctx.fillText('让每一餐都有惊喜',W/2,H-30)
+  initParticles()
+  requestAnimationFrame(animate)
 }
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r)
-  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r)
-  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r)
-  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath()
-}
+// ── Save modal ──
+const modal = document.getElementById('modal')
+const modalImg = document.getElementById('modalImg')
 
-function save(){
-  canvas.toBlob(blob=>{
-    const el=document.createElement('a')
-    el.download='盲选餐厅.png';el.href=URL.createObjectURL(blob)
-    el.click()
-    URL.revokeObjectURL(el.href)
-  },'image/png')
-}
+document.getElementById('saveBtn').addEventListener('click', () => {
+  modalImg.src = canvas.toDataURL('image/png')
+  modal.classList.add('show')
+})
 
-draw()
+document.getElementById('modalClose').addEventListener('click', () => {
+  modal.classList.remove('show')
+})
+
+modal.addEventListener('click', e => {
+  if (e.target === modal) modal.classList.remove('show')
+})
+
+// Go
+init()
 </script>
 </body>
 </html>

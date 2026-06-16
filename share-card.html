@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盲选餐厅 - 分享</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh;
+  background: #fef5ec;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+}
+
+.card {
+  width: 340px;
+  background: #FFFBF5;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,.1);
+}
+
+/* ── Hero ── */
+.hero {
+  background: linear-gradient(155deg, #FF7B42, #FF5E2C, #E84313);
+  padding: 32px 20px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.12) 1.5px, transparent 1.5px);
+  background-size: 18px 18px;
+}
+.hero-content { position: relative; z-index: 1; }
+
+.emoji-badge {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 40px;
+  backdrop-filter: blur(4px);
+}
+
+.hero-label {
+  font-size: 10px; letter-spacing: 4px;
+  color: rgba(255,255,255,.7); font-weight: 500;
+  text-transform: uppercase;
+}
+.hero-title {
+  font-size: 26px; font-weight: 800; color: white;
+  margin-top: 4px; letter-spacing: 1px;
+}
+
+/* ── Body ── */
+.body {
+  padding: 24px 24px 20px;
+  text-align: center;
+  position: relative;
+}
+.body::before {
+  content: '';
+  position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+  background: repeating-linear-gradient(90deg, #E8D5C4 0px, #E8D5C4 6px, transparent 6px, transparent 12px);
+}
+
+.tagline {
+  font-size: 17px; font-weight: 700; color: #2D3436;
+  margin-bottom: 6px;
+}
+.desc {
+  font-size: 13px; color: #636E72; margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+/* ── QR Code ── */
+.qr-wrap {
+  display: flex; justify-content: center; margin-bottom: 8px;
+}
+.qr-wrap canvas, .qr-wrap img {
+  width: 160px; height: 160px;
+  border-radius: 12px;
+}
+
+.qr-hint {
+  font-size: 11px; color: #B2BEC3; margin-top: 4px;
+}
+
+/* ── Features ── */
+.features {
+  display: flex; justify-content: center; gap: 24px;
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid #f0e8dc;
+}
+.feat {
+  text-align: center;
+}
+.feat-icon { font-size: 22px; }
+.feat-text { font-size: 11px; color: #636E72; margin-top: 4px; }
+
+/* ── Footer ── */
+.footer {
+  text-align: center; padding: 0 24px 20px;
+  font-size: 10px; color: #B2BEC3;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="emoji-badge">🥘</div>
+      <div class="hero-label">TODAY'S PICK</div>
+      <div class="hero-title">盲选餐厅</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="tagline">今天吃什么？让命运帮你决定</div>
+    <div class="desc">一键盲选周边 3km 好评餐厅<br>匹配你的口味，随机但靠谱</div>
+
+    <div class="qr-wrap">
+      <canvas id="qr"></canvas>
+    </div>
+    <div class="qr-hint">📱 微信扫码 → 开始盲选</div>
+
+    <div class="features">
+      <div class="feat">
+        <div class="feat-icon">📍</div>
+        <div class="feat-text">周边3km</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">⭐</div>
+        <div class="feat-text">好评筛选</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">🎰</div>
+        <div class="feat-text">盲盒惊喜</div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">📤</div>
+        <div class="feat-text">分享好友</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">blinds.pick · 让每一餐都有惊喜</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script>
+const url = 'https://bryanxu-bot.github.io/blindpick/'
+const canvas = document.getElementById('qr')
+QRCode.toCanvas(canvas, url, {
+  width: 320,
+  margin: 2,
+  color: {
+    dark: '#E8551A',
+    light: '#FFFBF5'
+  }
+}, (err) => {
+  if (err) console.error(err)
+})
+</script>
+
+</body>
+</html>

@@ -194,80 +194,31 @@ html, body {
 
 /* ═══════════════ SHARE OVERLAY ═══════════════ */
 .share-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   z-index: 150; opacity: 0; pointer-events: none; transition: opacity .3s;
-  padding: 24px;
+  padding: 24px; gap: 14px;
 }
 .share-overlay.show { opacity: 1; pointer-events: auto; }
 
-.share-card {
-  width: 100%; max-width: 340px; background: #FFFBF5; border-radius: 22px; overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.3);
-  animation: sharePop .5s cubic-bezier(.17,.67,.38,1.2);
+#shareCanvas {
+  width: 84vw; max-width: 360px; height: auto;
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  animation: sharePop .4s cubic-bezier(.17,.67,.38,1.2);
 }
-@keyframes sharePop { 0%{transform:scale(.6) rotate(-3deg);opacity:0} 60%{transform:scale(.92) rotate(.5deg)} 100%{transform:scale(.88) rotate(0);opacity:1} }
+@keyframes sharePop { 0%{transform:scale(.7);opacity:0} 100%{transform:scale(1);opacity:1} }
 
-.sc-hero {
-  background: linear-gradient(155deg, #FF7B42, #FF5E2C, #E84313);
-  padding: 28px 20px 24px; text-align: center; position: relative; overflow: hidden;
-}
-.sc-hero::after {
-  content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.12) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-.sc-hero-content { position: relative; z-index: 1; }
-.sc-emoji-ring {
-  width: 72px; height: 72px; border-radius: 50%;
-  background: rgba(255,255,255,.18); display: flex;
-  align-items: center; justify-content: center;
-  margin: 0 auto 10px;
-  animation: float 2s ease-in-out infinite;
-}
-@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-.sc-emoji-ring .sc-emoji { font-size: 38px; }
-.sc-label { font-size: 10px; letter-spacing: 3px; color: rgba(255,255,255,.7); font-weight: 500; text-transform: uppercase; }
-.sc-headline { font-size: 20px; font-weight: 800; color: white; margin-top: 2px; letter-spacing: 1px; }
-
-.sc-info { padding: 22px 22px 18px; text-align: center; position: relative; }
-.sc-info::before {
-  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
-  background: repeating-linear-gradient(90deg, #E8D5C4 0px, #E8D5C4 6px, transparent 6px, transparent 12px);
-}
-.sc-name { font-size: 24px; font-weight: 800; color: #2D3436; margin-bottom: 10px; }
-.sc-pills { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-.sc-pill { padding: 5px 10px; border-radius: 16px; font-size: 12px; font-weight: 600; }
-.sc-pill.rating { background: #FFF9E6; color: #D4920A; }
-.sc-pill.distance { background: #E8F8F5; color: #008966; }
-.sc-pill.price { background: #F0E6FF; color: #6C3EC7; }
-
-.sc-quote-mark { font-size: 32px; color: #FFD5C2; line-height: 1; font-family: Georgia, serif; margin-bottom: -12px; }
-.sc-quote { font-size: 13px; color: #555; line-height: 1.7; font-style: italic; padding: 0 4px; }
-
-.sc-cta { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
-.sc-qr-dummy {
-  width: 46px; height: 46px; border-radius: 8px; background: #F5F0E8;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 8px; color: #B8A898; border: 1.5px dashed #E0D5C5; flex-shrink: 0;
-}
-.sc-cta-text { text-align: left; }
-.sc-cta-main { font-size: 11px; font-weight: 700; color: #FF6B35; }
-.sc-cta-sub { font-size: 10px; color: #B2BEC3; margin-top: 2px; }
-
-.share-actions { display: flex; gap: 12px; margin-top: 20px; width: 100%; max-width: 340px; }
-.share-act-btn {
-  flex: 1; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.3);
-  background: rgba(255,255,255,.15); color: white; font-size: 14px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  font-weight: 500;
+.share-save-hint {
+  color: white; font-size: 15px; font-weight: 600;
+  background: rgba(255,255,255,.15); padding: 10px 22px;
+  border-radius: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .share-overlay-close {
-  margin-top: 16px; width: 40px; height: 40px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%;
   background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3);
-  color: white; font-size: 16px; cursor: pointer;
+  color: white; font-size: 18px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -292,9 +243,6 @@ html, body {
 @media (min-width: 420px) {
   .app { max-width: 420px; margin: 0 auto; }
 }
-.btn-save-qr{flex:1;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.18);color:white;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.sc-qr-canvas{border-radius:14px;background:white;padding:8px;margin:8px auto 4px;display:flex;justify-content:center;max-width:180px}
-.sc-qr-canvas canvas{display:block;width:100%;height:auto;max-width:180px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
@@ -390,27 +338,10 @@ html, body {
     </div>
   </div>
 
-  <!-- ═══ SHARE OVERLAY ═══ -->
+  <!-- ═══ SHARE OVERLAY (entrance card) ═══ -->
   <div class="share-overlay" id="shareOverlay" onclick="hideShare(event)">
-    <div class="share-card" id="shareCard" onclick="event.stopPropagation()">
-      <div class="sc-hero">
-        <div class="sc-hero-content">
-          <div class="sc-emoji-ring"><span class="sc-emoji" id="scEmoji">🍲</span></div>
-          <div class="sc-label">今日盲选 · 命运安排</div>
-          <div class="sc-headline">就吃这家吧！</div>
-        </div>
-      </div>
-      <div class="sc-info">
-        <div class="sc-name" id="scName">--</div>
-        <div class="sc-pills">
-          <span class="sc-pill rating">⭐ <span id="scRating">--</span></span>
-          <span class="sc-pill distance">📍 <span id="scDistance">--</span></span>
-          <span class="sc-pill price">💵 <span id="scPrice">--</span></span>
-        </div>
-        <div class="sc-quote-mark">"</div>
-        <div class="sc-quote" id="scQuote">--</div>
-      </div>
-    </div>
+    <canvas id="shareCanvas" onclick="event.stopPropagation()"></canvas>
+    <div class="share-save-hint">👆 长按图片 → 保存到相册</div>
     <button class="share-overlay-close" onclick="hideShare()">✕</button>
   </div>
 
@@ -525,10 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
-  // Check for native share support
-  if (navigator.share) {
-    document.getElementById('shareNativeBtn').style.display = 'flex'
-  }
 
   // Get location
   getLocation()
@@ -804,19 +731,137 @@ function renderResult(pick) {
   }
 }
 
-// ── Share ──
-function showShare() {
-  const pick = state.currentPick
-  if (!pick) return
+// ── Share (entrance card with QR) ──
+function roundRectSC(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r)
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r)
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r)
+  ctx.closePath()
+}
 
-  document.getElementById('scEmoji').textContent = pick.emoji || '🍲'
-  document.getElementById('scName').textContent = pick.name
-  document.getElementById('scRating').textContent = pick.rating
-  document.getElementById('scDistance').textContent = pick.distance || (pick.distanceRaw ? formatDist(pick.distanceRaw) : '--')
-  document.getElementById('scPrice').textContent = pick.cost || '--'
-  document.getElementById('scQuote').textContent = pick.ai || '这家店看起来不错，去试试吧！'
+function drawBowlIconSC(ctx, cx, cy, s) {
+  const bw = s * 0.65, bh = s * 0.45
+  ctx.fillStyle = 'rgba(255,255,255,.85)'
+  ctx.beginPath()
+  ctx.moveTo(cx - bw, cy - bh * 0.2)
+  ctx.quadraticCurveTo(cx - bw * 1.05, cy + bh * 0.6, cx - bw * 0.35, cy + bh)
+  ctx.lineTo(cx + bw * 0.35, cy + bh)
+  ctx.quadraticCurveTo(cx + bw * 1.05, cy + bh * 0.6, cx + bw, cy - bh * 0.2)
+  ctx.closePath(); ctx.fill()
+  ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = s * 0.12
+  ctx.beginPath()
+  ctx.moveTo(cx - bw * 0.55, cy - bh * 0.1)
+  ctx.quadraticCurveTo(cx, cy + bh * 0.15, cx + bw * 0.55, cy - bh * 0.1)
+  ctx.stroke()
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = s * 0.08; ctx.lineCap = 'round'
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath()
+    ctx.moveTo(cx + i * s * 0.3, cy - bh * 0.4)
+    ctx.quadraticCurveTo(cx + i * s * 0.15, cy - s * 0.7, cx + i * s * 0.3, cy - s * 0.95)
+    ctx.stroke()
+  }
+}
 
+let shareCardDrawn = false
+async function showShare() {
   document.getElementById('shareOverlay').classList.add('show')
+  if (shareCardDrawn) return
+
+  const W = 720, H = 880, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
+  const canvas = document.getElementById('shareCanvas')
+  const ctx = canvas.getContext('2d')
+  canvas.width = W; canvas.height = H
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W * 0.4, H * 0.45)
+  bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.4, '#FF5E2C'); bg.addColorStop(1, '#E84313')
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
+
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(W + 70, -110, 350, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(-60, H - 100, 260, 0, Math.PI * 2); ctx.stroke()
+
+  for (let x = 14; x < W; x += 22)
+    for (let y = 14; y < H; y += 22) {
+      const d = (x + y) % 66 === 0 ? 2.4 : 0.9
+      ctx.fillStyle = `rgba(255,255,255,${(x + y) % 66 === 0 ? 0.13 : 0.05})`
+      ctx.beginPath(); ctx.arc(x, y, d, 0, Math.PI * 2); ctx.fill()
+    }
+
+  ctx.save(); ctx.globalAlpha = 0.05
+  for (let i = 0; i < 16; i++) {
+    const angle = (i / 16) * Math.PI * 2 - Math.PI / 2
+    const nextAngle = ((i + 0.35) / 16) * Math.PI * 2 - Math.PI / 2
+    ctx.beginPath()
+    ctx.moveTo(W / 2, 130); ctx.lineTo(W / 2 + Math.cos(angle) * 160, 130 + Math.sin(angle) * 160)
+    ctx.lineTo(W / 2 + Math.cos(nextAngle) * 160, 130 + Math.sin(nextAngle) * 160)
+    ctx.closePath(); ctx.fillStyle = 'white'; ctx.fill()
+  }
+  ctx.restore()
+
+  // Food accents
+  const accents = [{x:W/2-50,y:100,r:5},{x:W/2+55,y:110,r:7},{x:W/2-35,y:175,r:4},{x:W/2+40,y:170,r:6},{x:W/2-60,y:145,r:3},{x:W/2+65,y:140,r:3.5}]
+  ctx.fillStyle = 'rgba(255,255,255,.2)'
+  accents.forEach(a => { ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2); ctx.fill() })
+
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.arc(W / 2, 130, 82, 0, Math.PI * 2); ctx.stroke()
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.arc(W / 2, 130, 100, 0, Math.PI * 2); ctx.stroke()
+
+  ctx.fillStyle = 'rgba(255,255,255,.22)'
+  ctx.beginPath(); ctx.arc(W / 2, 130, 58, 0, Math.PI * 2); ctx.fill()
+  drawBowlIconSC(ctx, W / 2, 130, 56)
+
+  ctx.font = 'bold 13px "PingFang SC","Helvetica Neue",sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center'
+  ctx.fillText('TODAY\'S PICK', W / 2, 222)
+  ctx.font = 'bold 44px "PingFang SC","Hiragino Sans GB",sans-serif'
+  ctx.fillStyle = 'white'
+  ctx.fillText('盲选餐厅', W / 2, 280)
+
+  // Card
+  const cX = 28, cY = 290, cW = W - 56, cH = H - cY - 22
+  ctx.fillStyle = '#FFFBF5'
+  ctx.beginPath(); roundRectSC(ctx, cX, cY, cW, cH, 26); ctx.fill()
+
+  ctx.strokeStyle = '#E8D5C4'; ctx.lineWidth = 1.5; ctx.setLineDash([7, 5])
+  ctx.beginPath(); ctx.moveTo(cX + 24, cY); ctx.lineTo(cX + cW - 24, cY); ctx.stroke(); ctx.setLineDash([])
+
+  ctx.font = 'bold 28px "PingFang SC",sans-serif'; ctx.fillStyle = '#2D3436'
+  ctx.fillText('今天吃什么？', W / 2, cY + 48)
+  ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
+  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
+
+  // QR
+  const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
+  const qrCanvas = document.createElement('canvas')
+  qrCanvas.width = qrW; qrCanvas.height = qrW
+  await QRCode.toCanvas(qrCanvas, APP_URL, { width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' } })
+  ctx.drawImage(qrCanvas, qrX, qrY, qrW, qrW)
+
+  ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
+  ctx.fillText('微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)
+
+  // Features
+  const fY = qrY + qrW + 58
+  ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
+
+  const feats = [{i:'📍',t:'周边3km'},{i:'⭐',t:'好评筛选'},{i:'🎰',t:'盲盒惊喜'},{i:'📤',t:'分享好友'}]
+  const gap = (W - 60) / feats.length
+  feats.forEach((f, j) => {
+    const fx = 30 + gap * j + gap / 2
+    ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(f.i, fx, fY + 18)
+    ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'; ctx.fillText(f.t, fx, fY + 44)
+  })
+
+  ctx.font = '12px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
+  ctx.fillText('让每一餐都有惊喜', W / 2, H - 26)
+
+  shareCardDrawn = true
 }
 
 function hideShare(e) {

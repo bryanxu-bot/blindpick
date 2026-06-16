@@ -7,10 +7,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;
   min-height:100vh;background:#fef5ec;
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-  padding:20px 16px;gap:18px;overflow-x:hidden;
+  padding:20px 16px 40px;gap:16px;overflow-x:hidden;
 }
 
 /* Floating orbs */
@@ -27,26 +27,50 @@ body{
 @keyframes floatB{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.06)}}
 @keyframes floatC{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-28px) scale(1.1)}}
 
-canvas{
-  display:block;width:92vw;max-width:360px;height:auto;
+/* Card image (shown after render, right-click save) */
+.card-img{
+  display:none;width:92vw;max-width:360px;height:auto;
   border-radius:24px;box-shadow:0 16px 48px rgba(0,0,0,.1);
   position:relative;z-index:1;
 }
+.card-img.show{display:block}
+
+canvas{display:none}
+
+/* Buttons */
+.btns{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  width:92vw;max-width:360px;position:relative;z-index:1;
+}
 .btn{
-  width:92vw;max-width:360px;height:54px;border-radius:16px;border:none;
-  background:linear-gradient(135deg,#FF6B35,#E8551A);
-  color:white;font-size:17px;font-weight:700;cursor:pointer;
-  box-shadow:0 4px 24px rgba(255,107,53,.28);
+  width:100%;height:54px;border-radius:16px;border:none;
+  font-size:17px;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px;
-  position:relative;z-index:1;
   transition:transform .15s,box-shadow .15s;
   -webkit-tap-highlight-color:transparent;
   user-select:none;-webkit-user-select:none;
 }
-.btn:active{transform:scale(.96);box-shadow:0 2px 12px rgba(255,107,53,.18)}
-.hint{font-size:12px;color:#B2BEC3;text-align:center;position:relative;z-index:1}
+.btn:active{transform:scale(.96)}
+.btn-download{
+  background:linear-gradient(135deg,#FF6B35,#E8551A);color:white;
+  box-shadow:0 4px 24px rgba(255,107,53,.28);
+}
+.btn-copy{
+  background:white;color:#E8551A;border:2px solid #F0E8DC;
+}
+.hint{
+  font-size:13px;color:#B2BEC3;text-align:center;position:relative;z-index:1;
+  line-height:1.6;
+}
 
-/* Modal */
+/* Loader */
+.loader{
+  width:48px;height:48px;border:4px solid #F0E8DC;border-top-color:#E8551A;
+  border-radius:50%;animation:spin .8s linear infinite;position:relative;z-index:1;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Modal (mobile long-press) */
 .modal{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:999;
   flex-direction:column;align-items:center;justify-content:center;
@@ -81,9 +105,18 @@ canvas{
   <div class="orb c"></div>
 </div>
 
+<div class="loader" id="loader"></div>
 <canvas id="card"></canvas>
-<button class="btn" id="saveBtn">💾 保存到相册</button>
-<div class="hint">保存后发朋友圈 / 微信群，别人扫码就能玩</div>
+<img class="card-img" id="cardImg" src="" alt="盲选餐厅入口卡 - 右键保存或长按保存" />
+
+<div class="btns" id="btns" style="display:none">
+  <button class="btn btn-download" id="btnDownload">💾 下载图片</button>
+  <button class="btn btn-copy" id="btnCopy">🔗 复制链接发给朋友</button>
+  <div class="hint">
+    下载 PNG 后直接发微信 / 朋友圈<br>
+    对方扫码即可开始盲选餐厅
+  </div>
+</div>
 
 <div class="modal" id="modal">
   <img id="modalImg" src="" alt="盲选餐厅入口卡" />
@@ -93,11 +126,12 @@ canvas{
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>
-const W = 720, H = 980
-const URL = 'https://bryanxu-bot.github.io/blindpick/'
+const W = 720, H = 980, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
 const canvas = document.getElementById('card')
 const ctx = canvas.getContext('2d')
 canvas.width = W; canvas.height = H
+
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.moveTo(x + r, y)
@@ -111,11 +145,8 @@ function roundRect(ctx, x, y, w, h, r) {
 async function draw() {
   // Background
   const bg = ctx.createLinearGradient(0, 0, W * 0.5, H * 0.35)
-  bg.addColorStop(0, '#FF7B42')
-  bg.addColorStop(0.5, '#FF5E2C')
-  bg.addColorStop(1, '#E84313')
-  ctx.fillStyle = bg
-  ctx.fillRect(0, 0, W, H)
+  bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.5, '#FF5E2C'); bg.addColorStop(1, '#E84313')
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
 
   // Dot grid
   ctx.fillStyle = 'rgba(255,255,255,.06)'
@@ -158,9 +189,9 @@ async function draw() {
   ctx.font = '17px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
   ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 84)
 
-  // QR code
+  // QR
   const qrW = 240, qrX = (W - qrW) / 2, qrY = cY + 108
-  const qrData = await QRCode.toDataURL(URL, {
+  const qrData = await QRCode.toDataURL(APP_URL, {
     width: qrW, margin: 2, color: { dark: '#E8551A', light: '#FFFBF5' }
   })
   const qrImg = new Image()
@@ -193,35 +224,55 @@ async function draw() {
   ctx.fillText('让每一餐都有惊喜', W / 2, H - 28)
 }
 
-// Save — detect if touch device
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+// Init
+draw().then(() => {
+  // Hide loader, show image + buttons
+  document.getElementById('loader').style.display = 'none'
+  const dataUrl = canvas.toDataURL('image/png')
+  const img = document.getElementById('cardImg')
+  img.src = dataUrl
+  img.classList.add('show')
+  document.getElementById('btns').style.display = 'flex'
 
-document.getElementById('saveBtn').addEventListener('click', () => {
-  if (isTouch) {
-    // Mobile: show modal for long-press save (most reliable)
-    document.getElementById('modalImg').src = canvas.toDataURL('image/png')
-    document.getElementById('modal').classList.add('show')
-  } else {
-    // Desktop: direct download
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url; a.download = '盲选餐厅.png'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }, 'image/png')
-  }
+  // Download button
+  document.getElementById('btnDownload').addEventListener('click', () => {
+    if (isMobile) {
+      // Mobile: show modal for long-press save
+      document.getElementById('modalImg').src = dataUrl
+      document.getElementById('modal').classList.add('show')
+    } else {
+      // Desktop: direct download
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = '盲选餐厅.png'
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }, 'image/png')
+    }
+  })
+
+  // Copy link button
+  document.getElementById('btnCopy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(APP_URL)
+      const btn = document.getElementById('btnCopy')
+      const orig = btn.textContent
+      btn.textContent = '✅ 链接已复制'
+      setTimeout(() => { btn.textContent = orig }, 2000)
+    } catch(e) {
+      alert('复制失败，手动复制：' + APP_URL)
+    }
+  })
 })
 
+// Modal close
 document.getElementById('modalClose').addEventListener('click', () => {
   document.getElementById('modal').classList.remove('show')
 })
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) document.getElementById('modal').classList.remove('show')
 })
-
-// Go
-draw()
 </script>
 </body>
 </html>

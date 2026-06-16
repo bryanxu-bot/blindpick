@@ -211,6 +211,12 @@ html, body {
   box-shadow: 0 20px 60px rgba(0,0,0,.35);
   animation: sharePop .4s cubic-bezier(.17,.67,.38,1.2);
 }
+#shareImg {
+  width: 84vw; max-width: 360px; height: auto;
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  animation: sharePop .4s cubic-bezier(.17,.67,.38,1.2);
+}
 @keyframes sharePop { 0%{transform:scale(.7);opacity:0} 100%{transform:scale(1);opacity:1} }
 
 .share-save-hint {
@@ -343,8 +349,9 @@ html, body {
 
   <!-- ═══ SHARE OVERLAY (entrance card) ═══ -->
   <div class="share-overlay" id="shareOverlay" onclick="hideShare(event)">
-    <canvas id="shareCanvas" onclick="event.stopPropagation()"></canvas>
-    <div class="share-save-hint">👆 长按图片 → 保存到相册</div>
+    <canvas id="shareCanvas" style="display:none"></canvas>
+    <img id="shareImg" src="" alt="盲选餐厅入口卡" onclick="event.stopPropagation()" style="display:none" />
+    <div class="share-save-hint" id="shareHint" style="display:none">👆 长按图片 → 保存到相册</div>
     <button class="share-overlay-close" onclick="hideShare()">✕</button>
   </div>
 
@@ -863,6 +870,13 @@ async function showShare() {
 
   ctx.font = '12px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
   ctx.fillText('让每一餐都有惊喜', W / 2, H - 26)
+
+  // Show as img for long-press save (canvas long-press doesn't work on mobile)
+  const img = document.getElementById('shareImg')
+  const hint = document.getElementById('shareHint')
+  img.src = canvas.toDataURL('image/png')
+  img.style.display = 'block'
+  hint.style.display = 'block'
 
   shareCardDrawn = true
 }

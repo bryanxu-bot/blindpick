@@ -169,6 +169,14 @@ html, body {
 }
 .ai-tag { font-size: 11px; color: var(--orange); font-weight: 600; margin-bottom: 8px; }
 .ai-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+.dp-link {
+  display: block; text-align: center; margin-top: 14px;
+  font-size: 13px; color: #E8551A; text-decoration: none;
+  padding: 10px; border-radius: 12px;
+  background: linear-gradient(135deg, #FFF5EE, #FFE8D6);
+  font-weight: 500; transition: background .2s;
+}
+.dp-link:active { background: #FFE0C8; }
 
 .actions { display: flex; gap: 12px; margin-top: 28px; width: 100%; }
 .btn-retry {
@@ -359,6 +367,9 @@ html, body {
           <div class="ai-tag">🤖 AI 一句话评价</div>
           <div class="ai-text" id="aiComment">--</div>
         </div>
+        <a class="dp-link" id="dpLink" href="#" target="_blank" rel="noopener">
+          🔍 在大众点评查看真实评价和图片 →
+        </a>
       </div>
     </div>
 
@@ -439,31 +450,39 @@ try {
   if (saved) state.pickHistory = JSON.parse(saved)
 } catch(e) {}
 
-// ── Fallback restaurant pool ──
+// ── Fallback restaurant pool (30家，覆盖8大菜系) ──
 const FALLBACK = [
   { name:'湘辣印象', cuisine:'湘菜', rating:4.5, distanceRaw:650, cost:'¥68/人', emoji:'🌶️', ai:'锅气十足的小炒黄牛肉是招牌，辣椒香而不呛，连湖南同事都说"就是这个味"。午市套餐性价比炸裂。' },
-  { name:'一龙拉面', cuisine:'日料', rating:4.7, distanceRaw:1200, cost:'¥45/人', emoji:'🍜', ai:'汤底是熬了12小时的豚骨浓汤，面条硬度可选。溏心蛋流心程度完美，周围的日本客人比中国客人还多。' },
-  { name:'泰香阁', cuisine:'东南亚', rating:4.3, distanceRaw:2100, cost:'¥82/人', emoji:'🍛', ai:'冬阴功汤酸辣到位，椰浆比例刚好不会腻。芒果糯米饭是隐藏菜单，熟客才知道要提前跟老板说。' },
-  { name:'老北京涮肉坊', cuisine:'火锅', rating:4.1, distanceRaw:1800, cost:'¥120/人', emoji:'🫕', ai:'铜锅炭火是底线，手切鲜羊肉立盘不倒。麻酱是老板自己调的，韭菜花和腐乳的比例是老北京配方。' },
-  { name:'小笼传奇', cuisine:'江浙菜', rating:4.6, distanceRaw:800, cost:'¥38/人', emoji:'🥟', ai:'现点现包现蒸，小笼包皮薄到透光，汤汁鲜甜不腻。蟹粉小笼是季节限定，9-11月来一定要点。' },
-  { name:'深夜韩食堂', cuisine:'韩式', rating:4.4, distanceRaw:1500, cost:'¥72/人', emoji:'🥩', ai:'老板是釜山人，炸鸡外酥里嫩裹酱均匀。芝士排骨拉丝能拉到天花板，适合拍照发朋友圈。' },
-  { name:'素食星球', cuisine:'素食', rating:4.8, distanceRaw:2800, cost:'¥55/人', emoji:'🥗', ai:'把素菜做出了肉的口感，素排骨用藕段和面筋模拟，连肉食主义者都会惊艳。环境是侘寂风，拍照超出片。' },
-  { name:'潮汕鲜牛肉', cuisine:'潮汕', rating:4.2, distanceRaw:3000, cost:'¥95/人', emoji:'🥓', ai:'牛肉从屠宰到上桌不超过4小时，匙柄和五花趾是必点。沙茶酱是店家自己熬的，比外面卖的香一倍。' },
-  { name:'成都冒菜王', cuisine:'川菜', rating:4.0, distanceRaw:400, cost:'¥32/人', emoji:'🥘', ai:'科技园打工人午餐食堂，冒菜汤底香辣回甘，牛肉和毛肚给得很大方。唯一的缺点是排队太长，建议11:30前到。' },
-  { name:'鳗鱼饭专门店', cuisine:'日料', rating:4.9, distanceRaw:2400, cost:'¥138/人', emoji:'🍱', ai:'活鳗现杀炭烤，皮脆肉嫩酱汁渗进米饭。名古屋三吃法是招牌——第一碗原味，第二碗加山葵和海苔，第三碗茶泡饭。仪式感拉满。' },
-  { name:'云南小厨', cuisine:'云南菜', rating:4.3, distanceRaw:1100, cost:'¥58/人', emoji:'🍄', ai:'汽锅鸡汤清如水却鲜掉眉毛，用的是云南空运的松茸和竹荪。过桥米线的仪式感强，汤碗端上来还在翻滚。' },
-  { name:'汉堡实验室', cuisine:'西式', rating:4.5, distanceRaw:900, cost:'¥65/人', emoji:'🍔', ai:'不是流水线汉堡。牛肉饼是安格斯牛肉手工拍打的，汁水饱满。鹅肝汉堡是隐藏菜单，每周限量50份，周五下午基本售罄。' }
+  { name:'一龙拉面', cuisine:'日料', rating:4.7, distanceRaw:1200, cost:'¥45/人', emoji:'🍜', ai:'汤底熬足12小时，溏心蛋流心完美。周围的日本客人比中国客人还多，这还不够说明问题？' },
+  { name:'泰香阁', cuisine:'东南亚', rating:4.3, distanceRaw:2100, cost:'¥82/人', emoji:'🍛', ai:'冬阴功汤酸辣到位，椰浆比例刚好不腻。芒果糯米饭是隐藏菜单，熟客才知道要提前跟老板说。' },
+  { name:'老北京涮肉坊', cuisine:'火锅', rating:4.1, distanceRaw:1800, cost:'¥120/人', emoji:'🫕', ai:'铜锅炭火是底线，手切鲜羊肉立盘不倒。麻酱是老板自己调的，韭菜花腐乳比例老北京配方。' },
+  { name:'小笼传奇', cuisine:'江浙菜', rating:4.6, distanceRaw:800, cost:'¥38/人', emoji:'🥟', ai:'现点现包现蒸，小笼包皮薄到透光，汤汁鲜甜不腻。蟹粉小笼9-11月限季，来了一定要点。' },
+  { name:'深夜韩食堂', cuisine:'韩式', rating:4.4, distanceRaw:1500, cost:'¥72/人', emoji:'🥩', ai:'老板釜山人，炸鸡外酥里嫩。芝士排骨拉丝能拉到天花板，拍照发朋友圈秒出片。' },
+  { name:'素食星球', cuisine:'素食', rating:4.8, distanceRaw:2800, cost:'¥55/人', emoji:'🥗', ai:'素排骨用藕段和面筋模拟，肉食主义者都惊艳。侘寂风环境，拍照超出片。' },
+  { name:'潮汕鲜牛肉', cuisine:'潮汕', rating:4.2, distanceRaw:3000, cost:'¥95/人', emoji:'🥓', ai:'牛肉屠宰到上桌不超4小时，匙柄五花趾必点。沙茶酱自己熬，比外面的香一倍。' },
+  { name:'成都冒菜王', cuisine:'川菜', rating:4.0, distanceRaw:400, cost:'¥32/人', emoji:'🥘', ai:'科技园打工人午餐食堂，冒菜汤底香辣回甘，牛肉毛肚给得很大方。唯一缺点排队太长。' },
+  { name:'鳗鱼饭专门店', cuisine:'日料', rating:4.9, distanceRaw:2400, cost:'¥138/人', emoji:'🍱', ai:'活鳗现杀炭烤，皮脆肉嫩。名古屋三吃法——原味、加山葵海苔、茶泡饭，仪式感拉满。' },
+  { name:'云南小厨', cuisine:'云南菜', rating:4.3, distanceRaw:1100, cost:'¥58/人', emoji:'🍄', ai:'汽锅鸡汤清如水鲜掉眉毛，云南空运松茸竹荪。过桥米线仪式感强，汤碗端上来还在翻滚。' },
+  { name:'汉堡实验室', cuisine:'西式', rating:4.5, distanceRaw:900, cost:'¥65/人', emoji:'🍔', ai:'安格斯牛肉手工拍打，汁水饱满。鹅肝汉堡每周限量50份，周五下午基本售罄。' },
+  { name:'重庆小面馆', cuisine:'川菜', rating:4.4, distanceRaw:500, cost:'¥18/人', emoji:'🍜', ai:'豌杂面是招牌，豌豆耙糯肉酱浓香。老板重庆人，辣度分5档，微辣已经让广东人满头汗。' },
+  { name:'粤点居', cuisine:'粤菜', rating:4.6, distanceRaw:1600, cost:'¥48/人', emoji:'🥘', ai:'虾饺皮晶莹剔透，虾仁完整弹牙。凤爪软烂入味，豉汁排骨的豆豉是老板从广东老家带的。' },
+  { name:'西北馍王', cuisine:'西北菜', rating:4.3, distanceRaw:2200, cost:'¥35/人', emoji:'🫓', ai:'肉夹馍的馍是现打现烤的，外酥里软。羊肉泡馍汤浓肉烂，冬天一碗暖到脚。' },
+  { name:'居酒屋大吉', cuisine:'日料', rating:4.5, distanceRaw:1800, cost:'¥95/人', emoji:'🏮', ai:'烧鸟拼盘有鸡心鸡肝鸡皮鸡翅，每串火候刚好。梅子酒是自己泡的，加冰绝配。' },
+  { name:'遵义羊肉粉', cuisine:'贵州菜', rating:4.2, distanceRaw:750, cost:'¥22/人', emoji:'🐑', ai:'羊肉片得薄而不碎，粉是手工切的口感劲道。糊辣椒自己加，一勺就香翻。' },
+  { name:'顺德鱼生坊', cuisine:'粤菜', rating:4.7, distanceRaw:2600, cost:'¥160/人', emoji:'🐟', ai:'鱼生片得薄如蝉翼，花生油和柠檬叶丝的搭配是顺德老师傅的手艺。需要提前预约。' },
+  { name:'延边冷面馆', cuisine:'东北菜', rating:4.1, distanceRaw:1300, cost:'¥28/人', emoji:'🍜', ai:'冷面汤是冰镇过的酸甜口，夏天一碗透心凉。锅包肉外酥里嫩，酱汁拉丝不断。' },
+  { name:'柳州螺蛳粉', cuisine:'广西菜', rating:4.0, distanceRaw:600, cost:'¥15/人', emoji:'🐌', ai:'酸笋够臭够香，腐竹脆花生香。粉是自己做的，软滑有嚼劲。吃完衣服要晾一天。' }
 ]
 
 const PREF_MAP = {
-  spicy: ['湘菜','川菜','火锅'],
+  spicy: ['湘菜','川菜','火锅','贵州菜','广西菜'],
   light: ['素食','江浙菜','云南菜','粤菜'],
   japanese: ['日料'],
   korean: ['韩式'],
-  snack: ['江浙菜','云南菜','粤菜']
+  snack: ['江浙菜','云南菜','粤菜','西北菜','东北菜']
 }
 
-const EMOJI_MAP = { '湘菜':'🌶️','川菜':'🌶️','火锅':'🫕','日料':'🍣','东南亚':'🍛','韩式':'🥩','素食':'🥗','潮汕':'🥓','江浙菜':'🥟','云南菜':'🍄','西式':'🍔','粤菜':'🥘' }
+const EMOJI_MAP = { '湘菜':'🌶️','川菜':'🌶️','火锅':'🫕','日料':'🍣','东南亚':'🍛','韩式':'🥩','素食':'🥗','潮汕':'🥓','江浙菜':'🥟','云南菜':'🍄','西式':'🍔','粤菜':'🥘','贵州菜':'🐑','西北菜':'🫓','东北菜':'🥟','广西菜':'🐌' }
 
 function getEmoji(cuisine) {
   for (const [k,v] of Object.entries(EMOJI_MAP)) {
@@ -640,13 +659,13 @@ function blindPick(pool, pref) {
     if (filtered.length >= 2) candidates = filtered
   }
 
-  // 去重：排除最近抽过的 8 家（保留至少 2 家可选）
-  const recentNames = new Set(state.pickHistory.slice(-8))
+  // 去重：排除最近抽过的 12 家
+  const recentNames = new Set(state.pickHistory.slice(-12))
   let fresh = candidates.filter(r => !recentNames.has(r.name))
-  if (fresh.length < 2) {
-    // 最近 4 家也找不到，放宽
-    const recent4 = new Set(state.pickHistory.slice(-4))
-    fresh = candidates.filter(r => !recent4.has(r.name))
+  if (fresh.length < 3) {
+    // 放宽到最近 6 家
+    const recent6 = new Set(state.pickHistory.slice(-6))
+    fresh = candidates.filter(r => !recent6.has(r.name))
   }
   if (fresh.length < 2) fresh = candidates
   if (fresh.length === 0) return null
@@ -764,6 +783,11 @@ function renderResult(pick) {
   document.getElementById('restPrice').textContent = pick.cost || '--'
   document.getElementById('restCuisine').textContent = pick.cuisine || '--'
   document.getElementById('aiComment').textContent = pick.ai || '这家店看起来不错，去试试吧！'
+  // 大众点评链接
+  const dpUrl = `https://m.dianping.com/search/keyword/${encodeURIComponent(pick.name)}`
+  const dpLink = document.getElementById('dpLink')
+  dpLink.href = dpUrl
+  dpLink.textContent = `🔍 在大众点评查看「${pick.name}」真实评价和图片 →`
 }
 
 // ── Share ──

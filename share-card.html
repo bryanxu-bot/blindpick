@@ -126,7 +126,7 @@ canvas{display:none}
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script>
-const W = 720, H = 980, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
+const W = 720, H = 880, APP_URL = 'https://bryanxu-bot.github.io/blindpick/'
 const canvas = document.getElementById('card')
 const ctx = canvas.getContext('2d')
 canvas.width = W; canvas.height = H
@@ -143,38 +143,63 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 async function draw() {
-  // Background
-  const bg = ctx.createLinearGradient(0, 0, W * 0.5, H * 0.35)
-  bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.5, '#FF5E2C'); bg.addColorStop(1, '#E84313')
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, W * 0.4, H * 0.45)
+  bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.4, '#FF5E2C'); bg.addColorStop(1, '#E84313')
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
 
-  // Dot grid
-  ctx.fillStyle = 'rgba(255,255,255,.06)'
-  for (let x = 16; x < W; x += 24)
-    for (let y = 16; y < H; y += 24) {
-      ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill()
+  // Large decorative arcs (off-screen)
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(W + 60, -100, 320, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(W + 80, -120, 400, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(-80, H - 120, 280, 0, Math.PI * 2); ctx.stroke()
+
+  // Dot grid — varied sizes for texture
+  for (let x = 14; x < W; x += 22) {
+    for (let y = 14; y < H; y += 22) {
+      const d = (x + y) % 66 === 0 ? 2.2 : 1.0
+      ctx.fillStyle = `rgba(255,255,255,${d > 2 ? 0.12 : 0.05})`
+      ctx.beginPath(); ctx.arc(x, y, d, 0, Math.PI * 2); ctx.fill()
     }
+  }
 
-  // Decorative arcs
-  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 2
-  ctx.beginPath(); ctx.arc(W + 40, -80, 240, 0, Math.PI * 2); ctx.stroke()
-  ctx.beginPath(); ctx.arc(W + 60, -100, 300, 0, Math.PI * 2); ctx.stroke()
+  // Sunburst rays behind emoji
+  const hY = 128
+  ctx.save()
+  ctx.globalAlpha = 0.06
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2 - Math.PI / 2
+    ctx.beginPath()
+    ctx.moveTo(W / 2, hY)
+    ctx.lineTo(W / 2 + Math.cos(angle - 0.12) * 140, hY + Math.sin(angle - 0.12) * 140)
+    ctx.lineTo(W / 2 + Math.cos(angle + 0.12) * 140, hY + Math.sin(angle + 0.12) * 140)
+    ctx.closePath()
+    ctx.fillStyle = 'white'; ctx.fill()
+  }
+  ctx.restore()
 
-  // Hero
-  const hY = 130
-  ctx.fillStyle = 'rgba(255,255,255,.18)'
-  ctx.beginPath(); ctx.arc(W / 2, hY, 58, 0, Math.PI * 2); ctx.fill()
-  ctx.font = '48px sans-serif'; ctx.textAlign = 'center'
-  ctx.fillText('🥘', W / 2, hY + 17)
+  // Outer rings around emoji
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.arc(W / 2, hY, 80, 0, Math.PI * 2); ctx.stroke()
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.arc(W / 2, hY, 95, 0, Math.PI * 2); ctx.stroke()
+
+  // Emoji glow
+  ctx.fillStyle = 'rgba(255,255,255,.2)'
+  ctx.beginPath(); ctx.arc(W / 2, hY, 55, 0, Math.PI * 2); ctx.fill()
+  ctx.font = '46px sans-serif'; ctx.textAlign = 'center'
+  ctx.fillText('🥘', W / 2, hY + 16)
+
+  // Subtitle + title
   ctx.font = 'bold 12px "PingFang SC","Helvetica Neue",sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,.7)'
-  ctx.fillText('TODAY\'S PICK', W / 2, hY + 95)
-  ctx.font = 'bold 46px "PingFang SC","Hiragino Sans GB",sans-serif'
+  ctx.fillText('TODAY\'S PICK', W / 2, hY + 90)
+  ctx.font = 'bold 44px "PingFang SC","Hiragino Sans GB",sans-serif'
   ctx.fillStyle = 'white'
-  ctx.fillText('盲选餐厅', W / 2, hY + 155)
+  ctx.fillText('盲选餐厅', W / 2, hY + 148)
 
-  // White card
-  const cX = 28, cY = 320, cW = W - 56, cH = H - cY - 26
+  // ── White card ──
+  const cX = 28, cY = 290, cW = W - 56, cH = H - cY - 22
   ctx.fillStyle = '#FFFBF5'
   ctx.beginPath(); roundRect(ctx, cX, cY, cW, cH, 26); ctx.fill()
 
@@ -185,26 +210,26 @@ async function draw() {
 
   // Description
   ctx.font = 'bold 28px "PingFang SC",sans-serif'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
-  ctx.fillText('今天吃什么？', W / 2, cY + 50)
-  ctx.font = '17px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
-  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 84)
+  ctx.fillText('今天吃什么？', W / 2, cY + 48)
+  ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
+  ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
-  // QR
-  const qrW = 240, qrX = (W - qrW) / 2, qrY = cY + 108
+  // ── QR code (300×300, bigger = easier to scan) ──
+  const qrW = 300, qrX = (W - qrW) / 2, qrY = cY + 102
   const qrData = await QRCode.toDataURL(APP_URL, {
-    width: qrW, margin: 2, color: { dark: '#E8551A', light: '#FFFBF5' }
+    width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' }
   })
   const qrImg = new Image()
   await new Promise(resolve => { qrImg.onload = resolve; qrImg.src = qrData })
   ctx.drawImage(qrImg, qrX, qrY, qrW, qrW)
 
   ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
-  ctx.fillText('📱 微信扫码 → 开始盲选', W / 2, qrY + qrW + 32)
+  ctx.fillText('📱 微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)
 
   // Features
-  const fY = qrY + qrW + 68
+  const fY = qrY + qrW + 62
   ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
-  ctx.beginPath(); ctx.moveTo(50, fY - 16); ctx.lineTo(W - 50, fY - 16); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
 
   const feats = [
     { i: '📍', t: '周边3km' }, { i: '⭐', t: '好评筛选' },
@@ -216,12 +241,12 @@ async function draw() {
     ctx.font = '28px sans-serif'; ctx.textAlign = 'center'
     ctx.fillText(f.i, fx, fY + 18)
     ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
-    ctx.fillText(f.t, fx, fY + 46)
+    ctx.fillText(f.t, fx, fY + 44)
   })
 
   // Footer
   ctx.font = '12px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
-  ctx.fillText('让每一餐都有惊喜', W / 2, H - 28)
+  ctx.fillText('让每一餐都有惊喜', W / 2, H - 26)
 }
 
 // Init

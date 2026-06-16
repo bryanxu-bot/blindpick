@@ -409,12 +409,7 @@ html, body {
         </div>
         <div class="sc-quote-mark">"</div>
         <div class="sc-quote" id="scQuote">--</div>
-        <div class="sc-qr-canvas" id="scQrWrap"><canvas id="scQrCanvas"></canvas></div>
-        <div class="sc-cta-sub" style="margin-bottom:4px;">📱 扫码看这家餐厅</div>
       </div>
-    </div>
-    <div class="share-actions">
-      <button class="btn-save-qr" onclick="saveQR()">💾 保存二维码</button>
     </div>
     <button class="share-overlay-close" onclick="hideShare()">✕</button>
   </div>
@@ -822,39 +817,11 @@ function showShare() {
   document.getElementById('scQuote').textContent = pick.ai || '这家店看起来不错，去试试吧！'
 
   document.getElementById('shareOverlay').classList.add('show')
-
-  // 生成结果页二维码
-  setTimeout(() => {
-    const canvas = document.getElementById('scQrCanvas')
-    const shareUrl = window.location.href
-    if (canvas && typeof QRCode !== 'undefined') {
-      QRCode.toCanvas(canvas, shareUrl, {
-        width: 440,
-        margin: 2,
-        color: { dark: '#E8551A', light: '#FFFBF5' }
-      }, (err) => { if (err) console.error('QR error:', err) })
-    }
-  }, 200)
 }
 
 function hideShare(e) {
   if (e && e.target !== e.currentTarget) return
   document.getElementById('shareOverlay').classList.remove('show')
-}
-
-function saveQR() {
-  const canvas = document.getElementById('scQrCanvas')
-  if (!canvas) { showToast('二维码生成中...'); return }
-  try {
-    const link = document.createElement('a')
-    link.download = '盲选餐厅-今日推荐.png'
-    link.href = canvas.toDataURL('image/png')
-    link.click()
-    showToast('二维码已保存！')
-  } catch(e) {
-    // 微信等不支持直接下载，提示长按保存
-    showToast('请长按二维码图片保存')
-  }
 }
 
 // ── Confetti ──

@@ -378,6 +378,8 @@ const RADIUS = 5000
 let state = {
   location: null,       // { latitude, longitude }
   locationName: '',
+  locationCity: '',      // 城市，用于美团链接上下文
+  locationDistrict: '',  // 区，用于美团链接上下文
   pref: 'all',
   pool: [],             // 当前餐厅池
   currentPick: null,
@@ -538,7 +540,10 @@ async function reverseGeocode(loc) {
   const data = await res.json()
   if (data.status === '1' && data.regeocode) {
     const a = data.regeocode.addressComponent
-    return `${a.city || a.province} · ${a.district}${a.township ? ' ' + a.township : ''}`
+    // 存储城市和区，用于美团链接上下文
+    state.locationCity = a.city || a.province || ''
+    state.locationDistrict = a.district || ''
+    return `${state.locationCity} · ${a.district}${a.township ? ' ' + a.township : ''}`
   }
   throw new Error('Reverse geocode failed')
 }
@@ -551,6 +556,8 @@ async function searchNearby(loc) {
     return data.pois.map(poi => ({
       name: poi.name,
       address: poi.address || '',
+      amapId: poi.id || '',           // 高德POI ID，可用于高德详情页
+      shopid: poi.shopid || '',       // 可能对应美团/点评的shop ID
       distanceRaw: parseInt(poi.distance) || 0,
       distance: formatDist(poi.distance),
       rating: poi.biz_ext ? parseFloat(poi.biz_ext.rating) : (parseFloat(poi.rating) || 0),
@@ -723,15 +730,26 @@ function renderResult(pick) {
   document.getElementById('restPrice').textContent = pick.cost || '--'
   document.getElementById('restCuisine').textContent = pick.cuisine || '--'
   document.getElementById('aiComment').textContent = pick.ai || '这家店看起来不错，去试试吧！'
-  // 美团链接（优先唤起App，fallback到网页）
+  // 美团/点评链接：优先使用shopid直接跳转，否则用美食搜索+城市上下文
   const keyword = encodeURIComponent(pick.name)
-  const mtWeb = `https://i.meituan.com/s/${keyword}`
-  const mtApp = `imeituan://www.meituan.com/search?q=${keyword}`
+  const cityContext = state.locationCity ? encodeURIComponent(' ' + state.locationCity + (state.locationDistrict ? ' ' + state.locationDistrict : '')) : ''
+  let mtWeb, mtApp
+  if (pick.shopid) {
+    // 有美团/点评 shop ID，直接跳转详情页
+    mtWeb = `https://m.dianping.com/shop/${pick.shopid}`
+    mtApp = `dianping://shop/${pick.shopid}`
+  } else {
+    // 无 shop ID，用美食搜索（加城市上下文提高精度）
+    mtWeb = `https://meishi.meituan.com/i/?keyword=${keyword}${cityContext}`
+    mtApp = `imeituan://www.meituan.com/search?q=${keyword}`
+  }
   const dpLink = document.getElementById('dpLink')
   dpLink.href = mtWeb
   dpLink.target = '_blank'
   dpLink.rel = 'noreferrer noopener'
-  dpLink.textContent = `🔍 打开美团查看「${pick.name}」真实评价 →`
+  dpLink.textContent = pick.shopid
+    ? `🔍 打开点评查看「${pick.name}」详情 →`
+    : `🔍 在美团查看「${pick.name}」→`
   // 尝试唤起 App（iframe 方式，不离开页面）
   dpLink.onclick = function(e) {
     e.preventDefault()

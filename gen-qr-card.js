@@ -1,7 +1,11 @@
-const { createCanvas, loadImage } = require('@napi-rs/canvas')
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas')
 const QRCode = require('qrcode')
 const fs = require('fs')
 const path = require('path')
+
+// 注册系统中文 PingFang 字体
+const PINGFANG = '/System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc'
+try { GlobalFonts.registerFromPath(PINGFANG, 'PingFang') } catch(e) { console.log('字体注册失败，使用系统默认:', e.message) }
 
 async function main() {
   const W = 680, H = 920
@@ -36,12 +40,12 @@ async function main() {
   // emoji 环
   ctx.fillStyle = 'rgba(255,255,255,.18)'
   ctx.beginPath(); ctx.arc(W / 2, heroCY, 58, 0, Math.PI * 2); ctx.fill()
-  ctx.font = '52px sans-serif'; ctx.textAlign = 'center'
+  ctx.font = '52px PingFang'; ctx.textAlign = 'center'
   ctx.fillText('🥘', W / 2, heroCY + 18)
 
-  ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.7)'
+  ctx.font = 'bold 12px PingFang'; ctx.fillStyle = 'rgba(255,255,255,.7)'
   ctx.fillText('TODAY\'S PICK', W / 2, heroCY + 108)
-  ctx.font = 'bold 48px sans-serif'; ctx.fillStyle = 'white'
+  ctx.font = 'bold 48px PingFang'; ctx.fillStyle = 'white'
   ctx.fillText('盲选餐厅', W / 2, heroCY + 172)
 
   // ── 白色卡片区 ──
@@ -66,9 +70,9 @@ async function main() {
   ctx.setLineDash([])
 
   // 描述
-  ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
+  ctx.font = 'bold 28px PingFang'; ctx.fillStyle = '#2D3436'; ctx.textAlign = 'center'
   ctx.fillText('今天吃什么？', W / 2, cardY + 54)
-  ctx.font = '17px sans-serif'; ctx.fillStyle = '#636E72'
+  ctx.font = '17px PingFang'; ctx.fillStyle = '#636E72'
   ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cardY + 90)
 
   // ── QR Code ──
@@ -79,7 +83,7 @@ async function main() {
   const qrImg = await loadImage(qrDataUrl)
   ctx.drawImage(qrImg, qrX, qrY, qrW, qrW)
 
-  ctx.font = '15px sans-serif'; ctx.fillStyle = '#B2BEC3'
+  ctx.font = '15px PingFang'; ctx.fillStyle = '#B2BEC3'
   ctx.fillText('📱 微信扫码 → 开始盲选', W / 2, qrY + qrW + 34)
 
   // ── 功能点 ──
@@ -94,14 +98,14 @@ async function main() {
   const gap = (W - 60) / feats.length
   feats.forEach((f, j) => {
     const fx = 30 + gap * j + gap / 2
-    ctx.font = '28px sans-serif'; ctx.textAlign = 'center'
+    ctx.font = '28px PingFang'; ctx.textAlign = 'center'
     ctx.fillText(f.i, fx, featY + 18)
-    ctx.font = '14px sans-serif'; ctx.fillStyle = '#636E72'
+    ctx.font = '14px PingFang'; ctx.fillStyle = '#636E72'
     ctx.fillText(f.t, fx, featY + 48)
   })
 
   // 底部
-  ctx.font = '12px sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
+  ctx.font = '12px PingFang'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
   ctx.fillText('让每一餐都有惊喜', W / 2, H - 28)
 
   // Save

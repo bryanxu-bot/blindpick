@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>盲选餐厅 - 今天吃什么？让命运帮你决定</title>
+<meta name="description" content="一键盲选周边3km好评餐厅，匹配你的口味，随机但靠谱。">
+
+<!-- Open Graph for WeChat share preview -->
+<meta property="og:title" content="盲选餐厅 - 今天吃什么？">
+<meta property="og:description" content="一键盲选周边好评餐厅，让命运帮你决定">
+<meta property="og:type" content="website">
+
+<style>
+:root {
+  --orange: #FF6B35; --orange-light: #FF8F5E; --gold: #F5A623;
+  --bg: #FFF8F0; --text: #2D3436; --text-secondary: #636E72;
+  --text-muted: #B2BEC3; --shadow: 0 4px 24px rgba(0,0,0,.08);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.12);
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ── Screens ── */
+.app { height: 100%; position: relative; overflow: hidden; }
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 20px calc(24px + var(--safe-bottom));
+  overflow-y: auto; overflow-x: hidden;
+  transition: transform .4s cubic-bezier(.4,0,.2,1), opacity .4s;
+  -webkit-overflow-scrolling: touch;
+}
+.screen.hidden { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.screen.active  { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.78); color: white; padding: 10px 24px;
+  border-radius: 20px; font-size: 14px; z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.toast.show { opacity: 1; }
+
+/* ═══════════════ HOME ═══════════════ */
+.loc-tag {
+  display: flex; align-items: center; gap: 8px;
+  background: white; padding: 10px 20px; border-radius: 24px;
+  font-size: 14px; color: var(--text-secondary);
+  box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer;
+}
+.loc-tag .loc-dot { width: 8px; height: 8px; border-radius: 50%; background: #00B894; }
+.loc-tag .loc-dot.loading { background: var(--gold); animation: pulse-dot 1s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.pref-row {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 36px;
+}
+.pref-chip {
+  padding: 8px 18px; border-radius: 22px; font-size: 14px;
+  background: white; color: var(--text-secondary);
+  border: 1px solid #eee; cursor: pointer; transition: all .2s;
+}
+.pref-chip.active { background: var(--orange); color: white; border-color: var(--orange); font-weight: 600; }
+
+.pick-zone { position: relative; width: 190px; height: 190px; display: flex; align-items: center; justify-content: center; margin-bottom: 40px; }
+.ripple-ring { position: absolute; border-radius: 50%; border: 2px solid rgba(255,107,53,.2); animation: ripple 2s ease-out infinite; }
+.ripple-ring:nth-child(1) { width: 210px; height: 210px; }
+.ripple-ring:nth-child(2) { width: 240px; height: 240px; animation-delay: .7s; }
+.ripple-ring:nth-child(3) { width: 270px; height: 270px; animation-delay: 1.4s; }
+@keyframes ripple { 0% { transform:scale(.85); opacity:.5 } 100% { transform:scale(1.1); opacity:0 } }
+
+.pick-btn {
+  width: 180px; height: 180px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), #E8551A);
+  border: none; cursor: pointer; color: white;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 8px 36px rgba(255,107,53,.35);
+  transition: transform .15s; position: relative; z-index: 1;
+}
+.pick-btn:active { transform: scale(.94); }
+.pick-emoji { font-size: 44px; margin-bottom: 2px; }
+.pick-label { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+.pick-sub { font-size: 11px; opacity: .75; margin-top: 4px; }
+
+.hint { text-align: center; font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+.hint strong { color: var(--orange); font-weight: 600; }
+
+/* ═══════════════ PICKING OVERLAY ═══════════════ */
+.picking-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.picking-overlay.show { opacity: 1; pointer-events: auto; }
+.picking-card {
+  background: white; border-radius: 28px; padding: 48px 64px;
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  box-shadow: var(--shadow-lg);
+}
+.picking-stage {
+  width: 100px; height: 100px; background: var(--bg); border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px; overflow: hidden;
+}
+.picking-stage.spin .stage-emoji { animation: slot .1s linear infinite; }
+@keyframes slot { 0%{transform:translateY(-200%)} 100%{transform:translateY(200%)} }
+.picking-text { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
+.picking-cancel {
+  font-size: 13px; color: var(--text-muted); padding: 8px 32px;
+  border-radius: 20px; border: 1px solid #eee; background: none; cursor: pointer;
+}
+
+/* ═══════════════ RESULT ═══════════════ */
+.result-header { text-align: center; margin-bottom: 24px; animation: fadeIn .5s; }
+@keyframes fadeIn { 0%{opacity:0;transform:translateY(-10px)} 100%{opacity:1;transform:translateY(0)} }
+.result-header .r-emoji { font-size: 48px; display: block; }
+.result-header .r-title { font-size: 14px; color: var(--text-secondary); margin-top: 8px; display: block; }
+
+.result-card {
+  width: 100%; background: white; border-radius: 24px; overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: cardUp .5s cubic-bezier(.17,.67,.38,1.1);
+}
+@keyframes cardUp { 0%{transform:translateY(40px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+
+.card-hero {
+  height: 160px;
+  background: linear-gradient(155deg, #FF8F5E, #FF6B35, #E8551A);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px; position: relative; overflow: hidden;
+}
+.card-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 70%, rgba(255,255,255,.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 30%, rgba(255,255,255,.06) 0%, transparent 40%);
+}
+.card-hero .hero-emoji { position: relative; z-index: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
+.card-hero .hero-source {
+  position: absolute; bottom: 10px; right: 16px;
+  background: rgba(0,0,0,.4); color: white; padding: 3px 12px;
+  border-radius: 12px; font-size: 11px; z-index: 1;
+}
+
+.card-body { padding: 20px; }
+.name-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.rest-name { font-size: 22px; font-weight: 800; flex: 1; }
+.rating-badge {
+  background: #FFF9E6; color: #D4920A; padding: 4px 12px;
+  border-radius: 14px; font-size: 14px; font-weight: 700; white-space: nowrap;
+}
+.meta-row { display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+
+.ai-box {
+  background: linear-gradient(135deg, #FFF8F0, #FFF0E5);
+  border-radius: 16px; padding: 16px;
+}
+.ai-tag { font-size: 11px; color: var(--orange); font-weight: 600; margin-bottom: 8px; }
+.ai-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+
+.actions { display: flex; gap: 12px; margin-top: 28px; width: 100%; }
+.btn-retry {
+  flex: 1; height: 50px; border-radius: 16px; border: 2px solid #eee;
+  background: white; font-size: 15px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.btn-share {
+  flex: 2; height: 50px; border-radius: 16px; border: none;
+  background: linear-gradient(135deg, var(--orange), #E8551A);
+  font-size: 15px; font-weight: 700; color: white; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: 0 4px 20px rgba(255,107,53,.3);
+}
+
+/* ═══════════════ SHARE OVERLAY ═══════════════ */
+.share-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 150; opacity: 0; pointer-events: none; transition: opacity .3s;
+  padding: 24px;
+}
+.share-overlay.show { opacity: 1; pointer-events: auto; }
+
+.share-card {
+  width: 100%; max-width: 340px; background: #FFFBF5; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  animation: sharePop .5s cubic-bezier(.17,.67,.38,1.2);
+}
+@keyframes sharePop { 0%{transform:scale(.6) rotate(-3deg);opacity:0} 60%{transform:scale(.92) rotate(.5deg)} 100%{transform:scale(.88) rotate(0);opacity:1} }
+
+.sc-hero {
+  background: linear-gradient(155deg, #FF7B42, #FF5E2C, #E84313);
+  padding: 28px 20px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.sc-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.sc-hero-content { position: relative; z-index: 1; }
+.sc-emoji-ring {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(255,255,255,.18); display: flex;
+  align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+  animation: float 2s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+.sc-emoji-ring .sc-emoji { font-size: 38px; }
+.sc-label { font-size: 10px; letter-spacing: 3px; color: rgba(255,255,255,.7); font-weight: 500; text-transform: uppercase; }
+.sc-headline { font-size: 20px; font-weight: 800; color: white; margin-top: 2px; letter-spacing: 1px; }
+
+.sc-info { padding: 22px 22px 18px; text-align: center; position: relative; }
+.sc-info::before {
+  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+  background: repeating-linear-gradient(90deg, #E8D5C4 0px, #E8D5C4 6px, transparent 6px, transparent 12px);
+}
+.sc-name { font-size: 24px; font-weight: 800; color: #2D3436; margin-bottom: 10px; }
+.sc-pills { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.sc-pill { padding: 5px 10px; border-radius: 16px; font-size: 12px; font-weight: 600; }
+.sc-pill.rating { background: #FFF9E6; color: #D4920A; }
+.sc-pill.distance { background: #E8F8F5; color: #008966; }
+.sc-pill.price { background: #F0E6FF; color: #6C3EC7; }
+
+.sc-quote-mark { font-size: 32px; color: #FFD5C2; line-height: 1; font-family: Georgia, serif; margin-bottom: -12px; }
+.sc-quote { font-size: 13px; color: #555; line-height: 1.7; font-style: italic; padding: 0 4px; }
+
+.sc-cta { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
+.sc-qr-dummy {
+  width: 46px; height: 46px; border-radius: 8px; background: #F5F0E8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #B8A898; border: 1.5px dashed #E0D5C5; flex-shrink: 0;
+}
+.sc-cta-text { text-align: left; }
+.sc-cta-main { font-size: 11px; font-weight: 700; color: #FF6B35; }
+.sc-cta-sub { font-size: 10px; color: #B2BEC3; margin-top: 2px; }
+
+.share-actions { display: flex; gap: 12px; margin-top: 20px; width: 100%; max-width: 340px; }
+.share-act-btn {
+  flex: 1; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.15); color: white; font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-weight: 500;
+}
+.share-overlay-close {
+  margin-top: 16px; width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3);
+  color: white; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ═══════════════ Confetti ═══════════════ */
+.confetti {
+  position: fixed; pointer-events: none; z-index: 160;
+  animation: confetti-fall .8s ease-out forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(400px) rotate(720deg) scale(0); opacity: 0; }
+}
+
+/* ═══════════════ Error / Empty states ═══════════════ */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--text-muted);
+}
+.empty-state .empty-emoji { font-size: 48px; margin-bottom: 12px; }
+.empty-state .empty-text { font-size: 14px; line-height: 1.6; }
+
+/* Responsive */
+@media (min-width: 420px) {
+  .app { max-width: 420px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ═══ HOME ═══ -->
+  <div class="screen active" id="home">
+    <div class="loc-tag" id="locTag" onclick="refreshLocation()">
+      <span class="loc-dot loading" id="locDot"></span>
+      <span id="locText">获取位置中...</span>
+    </div>
+
+    <div class="pref-row" id="prefRow">
+      <span class="pref-chip active" data-pref="all">不限</span>
+      <span class="pref-chip" data-pref="spicy">🌶️ 辣</span>
+      <span class="pref-chip" data-pref="light">🥗 清淡</span>
+      <span class="pref-chip" data-pref="japanese">🍣 日料</span>
+      <span class="pref-chip" data-pref="korean">🥩 韩式</span>
+      <span class="pref-chip" data-pref="snack">🍜 小吃</span>
+    </div>
+
+    <div class="pick-zone">
+      <div class="ripple-ring"></div>
+      <div class="ripple-ring"></div>
+      <div class="ripple-ring"></div>
+      <button class="pick-btn" id="pickBtn" onclick="startPick()">
+        <span class="pick-emoji">🥘</span>
+        <span class="pick-label">盲选一下</span>
+        <span class="pick-sub">Let the food find you</span>
+      </button>
+    </div>
+
+    <div class="hint">
+      周边 <strong>3km</strong> · 评分 <strong>≥ 3.8</strong><br>根据你的口味，随机但靠谱
+    </div>
+
+    <div id="homeError" style="display:none;margin-top:20px;text-align:center;">
+      <div class="empty-state">
+        <div class="empty-emoji">📡</div>
+        <div class="empty-text">定位或加载失败<br>将使用演示数据，仍然可以体验盲选</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RESULT ═══ -->
+  <div class="screen hidden" id="result">
+    <div class="result-header">
+      <span class="r-emoji" id="rEmoji">🎉</span>
+      <span class="r-title">命运安排你今天吃这家</span>
+    </div>
+
+    <div class="result-card">
+      <div class="card-hero">
+        <span class="hero-emoji" id="heroEmoji">🍲</span>
+        <span class="hero-source" id="heroSource">高德数据</span>
+      </div>
+      <div class="card-body">
+        <div class="name-row">
+          <span class="rest-name" id="restName">--</span>
+          <span class="rating-badge">⭐ <span id="restRating">--</span></span>
+        </div>
+        <div class="meta-row">
+          <span>📍 <span id="restDistance">--</span></span>
+          <span>💵 <span id="restPrice">--</span></span>
+          <span>🏷️ <span id="restCuisine">--</span></span>
+        </div>
+        <div class="ai-box">
+          <div class="ai-tag">🤖 AI 一句话评价</div>
+          <div class="ai-text" id="aiComment">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-retry" onclick="startPick()">🔄 再抽一家</button>
+      <button class="btn-share" onclick="showShare()">📤 分享给朋友</button>
+    </div>
+  </div>
+
+  <!-- ═══ PICKING OVERLAY ═══ -->
+  <div class="picking-overlay" id="pickingOverlay">
+    <div class="picking-card">
+      <div class="picking-stage" id="pickingStage">
+        <span class="stage-emoji">🍜</span>
+      </div>
+      <div class="picking-text">正在附近帮你搜罗<span id="pickingDots">...</span></div>
+      <button class="picking-cancel" onclick="cancelPick()">算了，自己选</button>
+    </div>
+  </div>
+
+  <!-- ═══ SHARE OVERLAY ═══ -->
+  <div class="share-overlay" id="shareOverlay" onclick="hideShare(event)">
+    <div class="share-card" id="shareCard" onclick="event.stopPropagation()">
+      <div class="sc-hero">
+        <div class="sc-hero-content">
+          <div class="sc-emoji-ring"><span class="sc-emoji" id="scEmoji">🍲</span></div>
+          <div class="sc-label">今日盲选 · 命运安排</div>
+          <div class="sc-headline">就吃这家吧！</div>
+        </div>
+      </div>
+      <div class="sc-info">
+        <div class="sc-name" id="scName">--</div>
+        <div class="sc-pills">
+          <span class="sc-pill rating">⭐ <span id="scRating">--</span></span>
+          <span class="sc-pill distance">📍 <span id="scDistance">--</span></span>
+          <span class="sc-pill price">💵 <span id="scPrice">--</span></span>
+        </div>
+        <div class="sc-quote-mark">"</div>
+        <div class="sc-quote" id="scQuote">--</div>
+        <div class="sc-cta">
+          <div class="sc-qr-dummy">扫码<br>盲选</div>
+          <div class="sc-cta-text">
+            <div class="sc-cta-main">看看你的今日盲选 →</div>
+            <div class="sc-cta-sub">打开链接 · 盲选餐厅</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="share-actions">
+      <button class="share-act-btn" id="shareCopyBtn" onclick="copyLink()">🔗 复制链接</button>
+      <button class="share-act-btn" id="shareNativeBtn" onclick="nativeShare()" style="display:none;">📤 原生分享</button>
+    </div>
+    <button class="share-overlay-close" onclick="hideShare()">✕</button>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+// ── Constants ──
+const AMAP_KEY = '2983fd157338ddfaa42a930eb10a25c9'
+const AMAP_HOST = 'https://restapi.amap.com'
+const RADIUS = 3000
+
+// ── State ──
+let state = {
+  location: null,       // { latitude, longitude }
+  locationName: '',
+  pref: 'all',
+  pool: [],             // 当前餐厅池
+  currentPick: null,
+  picking: false,
+  pickTimer: null,
+  emojiTimer: null,
+  dotsTimer: null
+}
+
+// ── Fallback restaurant pool ──
+const FALLBACK = [
+  { name:'湘辣印象', cuisine:'湘菜', rating:4.5, distanceRaw:650, cost:'¥68/人', emoji:'🌶️', ai:'锅气十足的小炒黄牛肉是招牌，辣椒香而不呛，连湖南同事都说"就是这个味"。午市套餐性价比炸裂。' },
+  { name:'一龙拉面', cuisine:'日料', rating:4.7, distanceRaw:1200, cost:'¥45/人', emoji:'🍜', ai:'汤底是熬了12小时的豚骨浓汤，面条硬度可选。溏心蛋流心程度完美，周围的日本客人比中国客人还多。' },
+  { name:'泰香阁', cuisine:'东南亚', rating:4.3, distanceRaw:2100, cost:'¥82/人', emoji:'🍛', ai:'冬阴功汤酸辣到位，椰浆比例刚好不会腻。芒果糯米饭是隐藏菜单，熟客才知道要提前跟老板说。' },
+  { name:'老北京涮肉坊', cuisine:'火锅', rating:4.1, distanceRaw:1800, cost:'¥120/人', emoji:'🫕', ai:'铜锅炭火是底线，手切鲜羊肉立盘不倒。麻酱是老板自己调的，韭菜花和腐乳的比例是老北京配方。' },
+  { name:'小笼传奇', cuisine:'江浙菜', rating:4.6, distanceRaw:800, cost:'¥38/人', emoji:'🥟', ai:'现点现包现蒸，小笼包皮薄到透光，汤汁鲜甜不腻。蟹粉小笼是季节限定，9-11月来一定要点。' },
+  { name:'深夜韩食堂', cuisine:'韩式', rating:4.4, distanceRaw:1500, cost:'¥72/人', emoji:'🥩', ai:'老板是釜山人，炸鸡外酥里嫩裹酱均匀。芝士排骨拉丝能拉到天花板，适合拍照发朋友圈。' },
+  { name:'素食星球', cuisine:'素食', rating:4.8, distanceRaw:2800, cost:'¥55/人', emoji:'🥗', ai:'把素菜做出了肉的口感，素排骨用藕段和面筋模拟，连肉食主义者都会惊艳。环境是侘寂风，拍照超出片。' },
+  { name:'潮汕鲜牛肉', cuisine:'潮汕', rating:4.2, distanceRaw:3000, cost:'¥95/人', emoji:'🥓', ai:'牛肉从屠宰到上桌不超过4小时，匙柄和五花趾是必点。沙茶酱是店家自己熬的，比外面卖的香一倍。' },
+  { name:'成都冒菜王', cuisine:'川菜', rating:4.0, distanceRaw:400, cost:'¥32/人', emoji:'🥘', ai:'科技园打工人午餐食堂，冒菜汤底香辣回甘，牛肉和毛肚给得很大方。唯一的缺点是排队太长，建议11:30前到。' },
+  { name:'鳗鱼饭专门店', cuisine:'日料', rating:4.9, distanceRaw:2400, cost:'¥138/人', emoji:'🍱', ai:'活鳗现杀炭烤，皮脆肉嫩酱汁渗进米饭。名古屋三吃法是招牌——第一碗原味，第二碗加山葵和海苔，第三碗茶泡饭。仪式感拉满。' },
+  { name:'云南小厨', cuisine:'云南菜', rating:4.3, distanceRaw:1100, cost:'¥58/人', emoji:'🍄', ai:'汽锅鸡汤清如水却鲜掉眉毛，用的是云南空运的松茸和竹荪。过桥米线的仪式感强，汤碗端上来还在翻滚。' },
+  { name:'汉堡实验室', cuisine:'西式', rating:4.5, distanceRaw:900, cost:'¥65/人', emoji:'🍔', ai:'不是流水线汉堡。牛肉饼是安格斯牛肉手工拍打的，汁水饱满。鹅肝汉堡是隐藏菜单，每周限量50份，周五下午基本售罄。' }
+]
+
+const PREF_MAP = {
+  spicy: ['湘菜','川菜','火锅'],
+  light: ['素食','江浙菜','云南菜','粤菜'],
+  japanese: ['日料'],
+  korean: ['韩式'],
+  snack: ['江浙菜','云南菜','粤菜']
+}
+
+const EMOJI_MAP = { '湘菜':'🌶️','川菜':'🌶️','火锅':'🫕','日料':'🍣','东南亚':'🍛','韩式':'🥩','素食':'🥗','潮汕':'🥓','江浙菜':'🥟','云南菜':'🍄','西式':'🍔','粤菜':'🥘' }
+
+function getEmoji(cuisine) {
+  for (const [k,v] of Object.entries(EMOJI_MAP)) {
+    if (cuisine && cuisine.includes(k)) return v
+  }
+  return '🍲'
+}
+
+// ── Screen navigation ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'))
+  document.getElementById(id).classList.remove('hidden')
+  document.getElementById(id).classList.add('active')
+}
+
+// ── Toast ──
+let toastTimer
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000)
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Pref chips
+  document.querySelectorAll('.pref-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.pref-chip').forEach(c => c.classList.remove('active'))
+      this.classList.add('active')
+      state.pref = this.dataset.pref
+      localStorage.setItem('blindpick_pref', state.pref)
+    })
+  })
+
+  // Restore pref
+  const savedPref = localStorage.getItem('blindpick_pref')
+  if (savedPref) {
+    state.pref = savedPref
+    document.querySelectorAll('.pref-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.pref === savedPref)
+    })
+  }
+
+  // Check for native share support
+  if (navigator.share) {
+    document.getElementById('shareNativeBtn').style.display = 'flex'
+  }
+
+  // Get location
+  getLocation()
+})
+
+// ── Location ──
+function getLocation() {
+  const dot = document.getElementById('locDot')
+  const text = document.getElementById('locText')
+  dot.className = 'loc-dot loading'
+  text.textContent = '获取位置中...'
+
+  if (!navigator.geolocation) {
+    setLocationFallback('浏览器不支持定位')
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      state.location = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+      // Reverse geocode
+      try {
+        const addr = await reverseGeocode(state.location)
+        state.locationName = addr
+        dot.className = 'loc-dot'
+        text.textContent = addr
+        document.getElementById('homeError').style.display = 'none'
+      } catch (e) {
+        setLocationText('已获取位置')
+      }
+      // Load nearby restaurants
+      loadRestaurants(state.location)
+    },
+    (err) => {
+      console.log('Geolocation error:', err)
+      if (err.code === 1) setLocationFallback('位置权限被拒绝，点击授权')
+      else setLocationFallback('定位失败，使用演示数据')
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+  )
+}
+
+function setLocationText(t) {
+  document.getElementById('locDot').className = 'loc-dot'
+  document.getElementById('locText').textContent = t
+}
+
+function setLocationFallback(msg) {
+  setLocationText(msg)
+  document.getElementById('homeError').style.display = 'block'
+  state.pool = [...FALLBACK]
+}
+
+function refreshLocation() {
+  getLocation()
+}
+
+// ── Gaode API ──
+async function reverseGeocode(loc) {
+  const url = `${AMAP_HOST}/v3/geocode/regeo?key=${AMAP_KEY}&location=${loc.longitude},${loc.latitude}&extensions=base`
+  const res = await fetch(url)
+  const data = await res.json()
+  if (data.status === '1' && data.regeocode) {
+    const a = data.regeocode.addressComponent
+    return `${a.city || a.province} · ${a.district}${a.township ? ' ' + a.township : ''}`
+  }
+  throw new Error('Reverse geocode failed')
+}
+
+async function searchNearby(loc) {
+  const url = `${AMAP_HOST}/v3/place/around?key=${AMAP_KEY}&location=${loc.longitude},${loc.latitude}&radius=${RADIUS}&types=050000|060000|070000&offset=30&page=1&extensions=all`
+  const res = await fetch(url)
+  const data = await res.json()
+  if (data.status === '1' && data.pois) {
+    return data.pois.map(poi => ({
+      name: poi.name,
+      address: poi.address || '',
+      distanceRaw: parseInt(poi.distance) || 0,
+      distance: formatDist(poi.distance),
+      rating: poi.biz_ext ? parseFloat(poi.biz_ext.rating) : (parseFloat(poi.rating) || 0),
+      cost: poi.biz_ext ? poi.biz_ext.cost : (poi.cost || ''),
+      cuisine: poi.type ? poi.type.split(';')[0].replace(/餐饮服务[>|_]/, '').replace(/中餐厅>?/, '').replace(/外国餐厅>?/, '') : '',
+      emoji: '',
+      ai: '',
+      source: '高德数据'
+    }))
+  }
+  throw new Error(data.info || 'Search failed')
+}
+
+function formatDist(m) {
+  if (!m && m !== 0) return ''
+  const v = parseInt(m)
+  return v < 1000 ? `${v}m` : `${(v/1000).toFixed(1)}km`
+}
+
+async function loadRestaurants(loc) {
+  try {
+    const restaurants = await searchNearby(loc)
+    if (restaurants.length > 0) {
+      state.pool = restaurants
+      console.log(`Loaded ${restaurants.length} nearby restaurants`)
+      document.getElementById('homeError').style.display = 'none'
+    } else {
+      state.pool = [...FALLBACK]
+    }
+  } catch (e) {
+    console.log('API failed, using fallback', e)
+    state.pool = [...FALLBACK]
+  }
+}
+
+// ── Blind pick logic ──
+function blindPick(pool, pref) {
+  // Filter by rating >= 3.8
+  let candidates = pool.filter(r => r.rating >= 3.8)
+  if (candidates.length === 0) candidates = [...pool]
+
+  // Pref filter
+  if (pref !== 'all' && PREF_MAP[pref]) {
+    const targets = PREF_MAP[pref]
+    const filtered = candidates.filter(r => targets.some(t => (r.cuisine||'').includes(t)))
+    if (filtered.length >= 2) candidates = filtered
+  }
+
+  // Weighted random by rating
+  const minR = Math.min(...candidates.map(r => r.rating))
+  const maxR = Math.max(...candidates.map(r => r.rating))
+  const range = maxR - minR || 1
+  const weighted = candidates.map(r => ({ ...r, weight: 1 + ((r.rating - minR) / range) * 4 }))
+  const total = weighted.reduce((s,r) => s + r.weight, 0)
+  let roll = Math.random() * total
+
+  for (const r of weighted) {
+    roll -= r.weight
+    if (roll <= 0) {
+      if (!r.emoji) r.emoji = getEmoji(r.cuisine)
+      if (!r.ai) r.ai = genComment(r)
+      return r
+    }
+  }
+
+  const last = weighted[weighted.length-1]
+  if (!last.emoji) last.emoji = getEmoji(last.cuisine)
+  if (!last.ai) last.ai = genComment(last)
+  return last
+}
+
+function genComment(r) {
+  const tpls = [
+    () => `${r.name}在附近小有名气，评分${r.rating}分，${r.rating>=4.5?'口碑相当不错':'值得一试'}。${r.cost?'人均'+r.cost+'，':''}${r.rating>=4.5?'是周边打工人的私藏好店':'路过可以进去尝尝'}`,
+    () => `据周边${r.rating>=4.5?'老顾客':'食客'}说，这家${r.cuisine||'餐厅'}${r.rating>=4.3?'味道稳定，':''}${r.distanceRaw<1000?'步行就到':'不远不近刚刚好'}。${r.rating>=4.5?'值得专程前往。':'路过不要错过。'}`,
+    () => `${r.rating>=4.5?'高评分':''}${r.cuisine||'美食'}代表，${r.distanceRaw<500?'就在楼下':r.distanceRaw<1000?'步行可达':'骑行几分钟就到'}。${r.cost?'人均'+r.cost+'，':''}${r.rating>=4.0?'性价比合理。':''}`
+  ]
+  return tpls[Math.floor(Math.random()*tpls.length)]()
+}
+
+// ── Pick flow ──
+function startPick() {
+  if (state.picking) return
+  state.picking = true
+
+  const overlay = document.getElementById('pickingOverlay')
+  const stage = document.getElementById('pickingStage')
+  stage.classList.add('spin')
+  overlay.classList.add('show')
+
+  // Cycle emojis
+  const emojis = ['🍜','🍕','🍣','🌮','🥘','🍛','🥟','🍔','🥗','🫕','🍱','🥩']
+  let i = 0
+  state.emojiTimer = setInterval(() => {
+    stage.querySelector('.stage-emoji').textContent = emojis[i % emojis.length]
+    i++
+  }, 80)
+
+  // Dots
+  let d = 0
+  state.dotsTimer = setInterval(() => {
+    document.getElementById('pickingDots').textContent = '.'.repeat((d%4))
+    d++
+  }, 400)
+
+  // Resolve
+  state.pickTimer = setTimeout(resolvePick, 1800)
+}
+
+function resolvePick() {
+  clearInterval(state.emojiTimer)
+  clearInterval(state.dotsTimer)
+  state.picking = false
+
+  const stage = document.getElementById('pickingStage')
+  stage.classList.remove('spin')
+  document.getElementById('pickingOverlay').classList.remove('show')
+
+  const pool = state.pool.length > 0 ? state.pool : [...FALLBACK]
+  const pick = blindPick(pool, state.pref)
+
+  if (!pick) {
+    showToast('附近没找到合适的餐厅，再试一次')
+    return
+  }
+
+  state.currentPick = pick
+  renderResult(pick)
+  showScreen('result')
+  spawnConfetti()
+
+  // Update URL for sharing
+  try {
+    const shareData = encodeURIComponent(JSON.stringify(pick))
+    window.history.replaceState(null, '', `?pick=${shareData}`)
+  } catch(e) {}
+}
+
+function cancelPick() {
+  clearInterval(state.emojiTimer)
+  clearInterval(state.dotsTimer)
+  clearTimeout(state.pickTimer)
+  state.picking = false
+  document.getElementById('pickingStage').classList.remove('spin')
+  document.getElementById('pickingOverlay').classList.remove('show')
+}
+
+function renderResult(pick) {
+  document.getElementById('rEmoji').textContent = pick.emoji || '🎉'
+  document.getElementById('heroEmoji').textContent = pick.emoji || '🍲'
+  document.getElementById('heroSource').textContent = pick.source || '高德数据'
+  document.getElementById('restName').textContent = pick.name
+  document.getElementById('restRating').textContent = pick.rating
+  document.getElementById('restDistance').textContent = pick.distance || (pick.distanceRaw ? formatDist(pick.distanceRaw) : '--')
+  document.getElementById('restPrice').textContent = pick.cost || '--'
+  document.getElementById('restCuisine').textContent = pick.cuisine || '--'
+  document.getElementById('aiComment').textContent = pick.ai || '这家店看起来不错，去试试吧！'
+}
+
+// ── Share ──
+function showShare() {
+  const pick = state.currentPick
+  if (!pick) return
+
+  document.getElementById('scEmoji').textContent = pick.emoji || '🍲'
+  document.getElementById('scName').textContent = pick.name
+  document.getElementById('scRating').textContent = pick.rating
+  document.getElementById('scDistance').textContent = pick.distance || (pick.distanceRaw ? formatDist(pick.distanceRaw) : '--')
+  document.getElementById('scPrice').textContent = pick.cost || '--'
+  document.getElementById('scQuote').textContent = pick.ai || '这家店看起来不错，去试试吧！'
+
+  document.getElementById('shareOverlay').classList.add('show')
+}
+
+function hideShare(e) {
+  if (e && e.target !== e.currentTarget) return
+  document.getElementById('shareOverlay').classList.remove('show')
+}
+
+function copyLink() {
+  const url = window.location.href
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('链接已复制，发给朋友吧！'))
+  } else {
+    // Fallback
+    const ta = document.createElement('textarea')
+    ta.value = url
+    ta.style.position = 'fixed'
+    ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    showToast('链接已复制，发给朋友吧！')
+  }
+}
+
+function nativeShare() {
+  if (!navigator.share) return
+  const pick = state.currentPick
+  if (!pick) return
+  navigator.share({
+    title: `命运安排我今天吃「${pick.name}」！`,
+    text: `盲选餐厅推荐：${pick.name}，⭐${pick.rating}分，📍${pick.distance||''}。你也来试试你的今日盲选？`,
+    url: window.location.href
+  }).catch(() => {})
+}
+
+// ── Confetti ──
+function spawnConfetti() {
+  const colors = ['#FF6B35','#FDCB6E','#00B894','#6C5CE7','#FF6B6B','#74B9FF','#FFA726']
+  for (let i=0; i<40; i++) {
+    const el = document.createElement('div')
+    el.className = 'confetti'
+    const size = 6 + Math.random() * 8
+    el.style.cssText = `
+      left: ${Math.random()*100}%;
+      top: ${Math.random()*30}%;
+      width: ${size}px; height: ${size}px;
+      background: ${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay: ${Math.random()*.3}s;
+    `
+    document.getElementById('app').appendChild(el)
+    setTimeout(() => el.remove(), 1000)
+  }
+}
+
+// ── Load from share URL ──
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search)
+  const pickStr = params.get('pick')
+  if (pickStr) {
+    try {
+      const pick = JSON.parse(decodeURIComponent(pickStr))
+      state.currentPick = pick
+      renderResult(pick)
+      showScreen('result')
+    } catch(e) {}
+  }
+}
+
+// Initialize
+loadFromURL()
+</script>
+
+</body>
+</html>

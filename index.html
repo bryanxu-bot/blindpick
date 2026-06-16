@@ -785,7 +785,7 @@ function renderResult(pick) {
   document.getElementById('aiComment').textContent = pick.ai || '这家店看起来不错，去试试吧！'
   // 大众点评链接（优先唤起App，fallback到网页）
   const keyword = encodeURIComponent(pick.name)
-  const dpWeb = `https://m.dianping.com/search/keyword/${keyword}`
+  const dpWeb = `https://www.dianping.com/search/keyword/${keyword}`
   const dpApp = `dianping://web?url=${encodeURIComponent(dpWeb)}`
   const dpLink = document.getElementById('dpLink')
   dpLink.href = dpWeb

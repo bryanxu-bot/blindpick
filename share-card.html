@@ -260,14 +260,14 @@ async function draw() {
   ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
   ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
-  // ── QR code 320×320 ──
+  // ── QR code 320×320 (temp square canvas, zero distortion) ──
   const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
-  const qrData = await QRCode.toDataURL(APP_URL, {
+  const qrCanvas = document.createElement('canvas')
+  qrCanvas.width = qrW; qrCanvas.height = qrW
+  await QRCode.toCanvas(qrCanvas, APP_URL, {
     width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' }
   })
-  const qrImg = new Image()
-  await new Promise(resolve => { qrImg.onload = resolve; qrImg.src = qrData })
-  ctx.drawImage(qrImg, qrX, qrY, qrW, qrW)
+  ctx.drawImage(qrCanvas, qrX, qrY, qrW, qrW)
 
   ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
   ctx.fillText('微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)

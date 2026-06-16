@@ -284,7 +284,11 @@ html, body {
 @media (min-width: 420px) {
   .app { max-width: 420px; margin: 0 auto; }
 }
+.btn-save-qr{flex:1;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.18);color:white;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sc-qr-canvas{border-radius:16px;background:white;padding:8px;margin-bottom:8px}
+.sc-qr-canvas canvas{display:block;width:170px;height:170px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -394,18 +398,12 @@ html, body {
         </div>
         <div class="sc-quote-mark">"</div>
         <div class="sc-quote" id="scQuote">--</div>
-        <div class="sc-cta">
-          <div class="sc-qr-dummy">扫码<br>盲选</div>
-          <div class="sc-cta-text">
-            <div class="sc-cta-main">看看你的今日盲选 →</div>
-            <div class="sc-cta-sub">打开链接 · 盲选餐厅</div>
-          </div>
-        </div>
+        <div class="sc-qr-canvas" id="scQrWrap"><canvas id="scQrCanvas"></canvas></div>
+        <div class="sc-cta-sub" style="margin-bottom:4px;">📱 扫码看这家餐厅</div>
       </div>
     </div>
     <div class="share-actions">
-      <button class="share-act-btn" id="shareCopyBtn" onclick="copyLink()">🔗 复制链接</button>
-      <button class="share-act-btn" id="shareNativeBtn" onclick="nativeShare()" style="display:none;">📤 原生分享</button>
+      <button class="btn-save-qr" onclick="saveQR()">💾 保存二维码</button>
     </div>
     <button class="share-overlay-close" onclick="hideShare()">✕</button>
   </div>
@@ -431,8 +429,15 @@ let state = {
   picking: false,
   pickTimer: null,
   emojiTimer: null,
-  dotsTimer: null
+  dotsTimer: null,
+  pickHistory: []       // 抽过的餐厅名，用于去重
 }
+
+// 加载去重记录
+try {
+  const saved = localStorage.getItem('blindpick_history')
+  if (saved) state.pickHistory = JSON.parse(saved)
+} catch(e) {}
 
 // ── Fallback restaurant pool ──
 const FALLBACK = [
@@ -626,7 +631,7 @@ async function loadRestaurants(loc) {
 function blindPick(pool, pref) {
   // Filter by rating >= 3.8
   let candidates = pool.filter(r => r.rating >= 3.8)
-  if (candidates.length === 0) candidates = [...pool]
+  if (candidates.length < 3) candidates = [...pool]
 
   // Pref filter
   if (pref !== 'all' && PREF_MAP[pref]) {
@@ -635,11 +640,22 @@ function blindPick(pool, pref) {
     if (filtered.length >= 2) candidates = filtered
   }
 
+  // 去重：排除最近抽过的 8 家（保留至少 2 家可选）
+  const recentNames = new Set(state.pickHistory.slice(-8))
+  let fresh = candidates.filter(r => !recentNames.has(r.name))
+  if (fresh.length < 2) {
+    // 最近 4 家也找不到，放宽
+    const recent4 = new Set(state.pickHistory.slice(-4))
+    fresh = candidates.filter(r => !recent4.has(r.name))
+  }
+  if (fresh.length < 2) fresh = candidates
+  if (fresh.length === 0) return null
+
   // Weighted random by rating
-  const minR = Math.min(...candidates.map(r => r.rating))
-  const maxR = Math.max(...candidates.map(r => r.rating))
+  const minR = Math.min(...fresh.map(r => r.rating))
+  const maxR = Math.max(...fresh.map(r => r.rating))
   const range = maxR - minR || 1
-  const weighted = candidates.map(r => ({ ...r, weight: 1 + ((r.rating - minR) / range) * 4 }))
+  const weighted = fresh.map(r => ({ ...r, weight: 1 + ((r.rating - minR) / range) * 4 }))
   const total = weighted.reduce((s,r) => s + r.weight, 0)
   let roll = Math.random() * total
 
@@ -714,6 +730,10 @@ function resolvePick() {
   }
 
   state.currentPick = pick
+  // 记录去重
+  state.pickHistory.push(pick.name)
+  if (state.pickHistory.length > 30) state.pickHistory = state.pickHistory.slice(-30)
+  try { localStorage.setItem('blindpick_history', JSON.stringify(state.pickHistory)) } catch(e) {}
   renderResult(pick)
   showScreen('result')
   spawnConfetti()
@@ -759,6 +779,19 @@ function showShare() {
   document.getElementById('scQuote').textContent = pick.ai || '这家店看起来不错，去试试吧！'
 
   document.getElementById('shareOverlay').classList.add('show')
+
+  // 生成结果页二维码
+  setTimeout(() => {
+    const canvas = document.getElementById('scQrCanvas')
+    const shareUrl = window.location.href
+    if (canvas && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(canvas, shareUrl, {
+        width: 340,
+        margin: 2,
+        color: { dark: '#E8551A', light: '#FFFBF5' }
+      }, (err) => { if (err) console.error('QR error:', err) })
+    }
+  }, 200)
 }
 
 function hideShare(e) {
@@ -766,33 +799,19 @@ function hideShare(e) {
   document.getElementById('shareOverlay').classList.remove('show')
 }
 
-function copyLink() {
-  const url = window.location.href
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => showToast('链接已复制，发给朋友吧！'))
-  } else {
-    // Fallback
-    const ta = document.createElement('textarea')
-    ta.value = url
-    ta.style.position = 'fixed'
-    ta.style.left = '-9999px'
-    document.body.appendChild(ta)
-    ta.select()
-    document.execCommand('copy')
-    document.body.removeChild(ta)
-    showToast('链接已复制，发给朋友吧！')
+function saveQR() {
+  const canvas = document.getElementById('scQrCanvas')
+  if (!canvas) { showToast('二维码生成中...'); return }
+  try {
+    const link = document.createElement('a')
+    link.download = '盲选餐厅-今日推荐.png'
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+    showToast('二维码已保存！')
+  } catch(e) {
+    // 微信等不支持直接下载，提示长按保存
+    showToast('请长按二维码图片保存')
   }
-}
-
-function nativeShare() {
-  if (!navigator.share) return
-  const pick = state.currentPick
-  if (!pick) return
-  navigator.share({
-    title: `命运安排我今天吃「${pick.name}」！`,
-    text: `盲选餐厅推荐：${pick.name}，⭐${pick.rating}分，📍${pick.distance||''}。你也来试试你的今日盲选？`,
-    url: window.location.href
-  }).catch(() => {})
 }
 
 // ── Confetti ──
@@ -822,6 +841,11 @@ function loadFromURL() {
     try {
       const pick = JSON.parse(decodeURIComponent(pickStr))
       state.currentPick = pick
+      if (!state.pickHistory.includes(pick.name)) {
+        state.pickHistory.push(pick.name)
+        if (state.pickHistory.length > 30) state.pickHistory = state.pickHistory.slice(-30)
+        try { localStorage.setItem('blindpick_history', JSON.stringify(state.pickHistory)) } catch(e) {}
+      }
       renderResult(pick)
       showScreen('result')
     } catch(e) {}

@@ -331,8 +331,11 @@ html, body {
           <div class="ai-tag">🤖 AI 一句话评价</div>
           <div class="ai-text" id="aiComment">--</div>
         </div>
-        <a class="dp-link" id="dpLink" href="#" target="_blank" rel="noopener">
-          🔍 在美团查看真实评价和图片 →
+        <a class="dp-link" id="amapLink" href="#" target="_blank" rel="noopener">
+          📍 在高德地图查看详情 →
+        </a>
+        <a class="dp-link" id="mtLink" href="#" target="_blank" rel="noreferrer noopener" style="margin-top:8px">
+          🔍 在美团搜索「<span id="mtLinkName">--</span>」→
         </a>
       </div>
     </div>
@@ -730,40 +733,69 @@ function renderResult(pick) {
   document.getElementById('restPrice').textContent = pick.cost || '--'
   document.getElementById('restCuisine').textContent = pick.cuisine || '--'
   document.getElementById('aiComment').textContent = pick.ai || '这家店看起来不错，去试试吧！'
-  // 美团/点评链接：优先使用shopid直接跳转，否则用美食搜索+城市上下文
+  // ── 高德详情页（主链接，有POI ID可直接跳转） ──
+  const amapLink = document.getElementById('amapLink')
+  if (pick.amapId) {
+    amapLink.href = `https://m.amap.com/detail/${pick.amapId}`
+    amapLink.onclick = function(e) {
+      e.preventDefault()
+      // 尝试唤起高德App
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = `iosamap://poi?poiid=${pick.amapId}`
+      document.body.appendChild(iframe)
+      const cleanup = () => { setTimeout(() => document.body.removeChild(iframe), 100) }
+      window.addEventListener('pagehide', cleanup, { once: true })
+      setTimeout(() => { cleanup(); window.open(amapLink.href, '_blank') }, 500)
+    }
+    amapLink.textContent = `📍 在高德地图查看「${pick.name}」详情 →`
+    amapLink.style.display = 'block'
+  } else {
+    amapLink.style.display = 'none'
+  }
+
+  // ── 美团搜索（辅助链接，无shop ID只能搜索） ──
   const keyword = encodeURIComponent(pick.name)
   const cityContext = state.locationCity ? encodeURIComponent(' ' + state.locationCity + (state.locationDistrict ? ' ' + state.locationDistrict : '')) : ''
-  let mtWeb, mtApp
+  const mtLink = document.getElementById('mtLink')
+  const mtLinkName = document.getElementById('mtLinkName')
+  mtLinkName.textContent = pick.name
+
   if (pick.shopid) {
-    // 有美团/点评 shop ID，直接跳转详情页
-    mtWeb = `https://m.dianping.com/shop/${pick.shopid}`
-    mtApp = `dianping://shop/${pick.shopid}`
+    // 有 shop ID → 直接跳转点评详情页
+    const mtWeb = `https://m.dianping.com/shop/${pick.shopid}`
+    mtLink.href = mtWeb
+    mtLink.textContent = `🔍 在大众点评查看「${pick.name}」详情 →`
+    mtLinkName.style.display = 'none'
+    mtLink.onclick = function(e) {
+      e.preventDefault()
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = `dianping://shop/${pick.shopid}`
+      document.body.appendChild(iframe)
+      const cleanup = () => { setTimeout(() => document.body.removeChild(iframe), 100) }
+      window.addEventListener('pagehide', cleanup, { once: true })
+      setTimeout(() => { cleanup(); window.open(mtLink.href, '_blank') }, 500)
+    }
   } else {
-    // 无 shop ID，用美食搜索（加城市上下文提高精度）
-    mtWeb = `https://meishi.meituan.com/i/?keyword=${keyword}${cityContext}`
-    mtApp = `imeituan://www.meituan.com/search?q=${keyword}`
-  }
-  const dpLink = document.getElementById('dpLink')
-  dpLink.href = mtWeb
-  dpLink.target = '_blank'
-  dpLink.rel = 'noreferrer noopener'
-  dpLink.textContent = pick.shopid
-    ? `🔍 打开点评查看「${pick.name}」详情 →`
-    : `🔍 在美团查看「${pick.name}」→`
-  // 尝试唤起 App（iframe 方式，不离开页面）
-  dpLink.onclick = function(e) {
-    e.preventDefault()
-    let timer
-    const iframe = document.createElement('iframe')
-    iframe.style.display = 'none'
-    iframe.src = mtApp
-    document.body.appendChild(iframe)
-    const cleanup = () => { clearTimeout(timer); setTimeout(() => document.body.removeChild(iframe), 100) }
-    window.addEventListener('pagehide', cleanup, { once: true })
-    timer = setTimeout(() => {
-      cleanup()
-      window.open(mtWeb, '_blank')
-    }, 600)
+    // 无 shop ID → 美团美食搜索（加城市上下文）
+    const mtWeb = `https://meishi.meituan.com/i/?keyword=${keyword}${cityContext}`
+    mtLink.href = mtWeb
+    mtLinkName.style.display = 'inline'
+    mtLink.textContent = ''
+    mtLink.appendChild(document.createTextNode('🔍 在美团搜索「'))
+    mtLink.appendChild(mtLinkName)
+    mtLink.appendChild(document.createTextNode('」→'))
+    mtLink.onclick = function(e) {
+      e.preventDefault()
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = `imeituan://www.meituan.com/search?q=${keyword}`
+      document.body.appendChild(iframe)
+      const cleanup = () => { setTimeout(() => document.body.removeChild(iframe), 100) }
+      window.addEventListener('pagehide', cleanup, { once: true })
+      setTimeout(() => { cleanup(); window.open(mtLink.href, '_blank') }, 500)
+    }
   }
 }
 

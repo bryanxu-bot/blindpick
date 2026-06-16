@@ -12,12 +12,10 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
   padding:20px 16px 40px;gap:16px;overflow-x:hidden;
 }
-
-/* Floating orbs */
 .orbs{position:fixed;inset:0;pointer-events:none;z-index:0}
 .orb{
   position:absolute;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,107,53,.18),transparent 70%);
+  background:radial-gradient(circle,rgba(255,107,53,.16),transparent 70%);
   animation-timing-function:ease-in-out;animation-iteration-count:infinite;
 }
 .orb.a{width:140px;height:140px;top:8%;left:-40px;animation:floatA 7s infinite}
@@ -27,17 +25,17 @@ body{
 @keyframes floatB{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.06)}}
 @keyframes floatC{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-28px) scale(1.1)}}
 
-/* Card image (shown after render, right-click save) */
-.card-img{
-  display:none;width:92vw;max-width:360px;height:auto;
+#cardImg{
+  display:block;width:92vw;max-width:360px;height:auto;
   border-radius:24px;box-shadow:0 16px 48px rgba(0,0,0,.1);
   position:relative;z-index:1;
 }
-.card-img.show{display:block}
+.loader{
+  width:48px;height:48px;border:4px solid #F0E8DC;border-top-color:#E8551A;
+  border-radius:50%;animation:spin .8s linear infinite;position:relative;z-index:1;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-canvas{display:none}
-
-/* Buttons */
 .btns{
   display:flex;flex-direction:column;align-items:center;gap:12px;
   width:92vw;max-width:360px;position:relative;z-index:1;
@@ -46,7 +44,7 @@ canvas{display:none}
   width:100%;height:54px;border-radius:16px;border:none;
   font-size:17px;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:transform .15s,box-shadow .15s;
+  transition:transform .15s;
   -webkit-tap-highlight-color:transparent;
   user-select:none;-webkit-user-select:none;
 }
@@ -55,22 +53,11 @@ canvas{display:none}
   background:linear-gradient(135deg,#FF6B35,#E8551A);color:white;
   box-shadow:0 4px 24px rgba(255,107,53,.28);
 }
-.btn-copy{
+.btn-link{
   background:white;color:#E8551A;border:2px solid #F0E8DC;
 }
-.hint{
-  font-size:13px;color:#B2BEC3;text-align:center;position:relative;z-index:1;
-  line-height:1.6;
-}
+.hint{font-size:13px;color:#B2BEC3;text-align:center;position:relative;z-index:1;line-height:1.6}
 
-/* Loader */
-.loader{
-  width:48px;height:48px;border:4px solid #F0E8DC;border-top-color:#E8551A;
-  border-radius:50%;animation:spin .8s linear infinite;position:relative;z-index:1;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Modal (mobile long-press) */
 .modal{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:999;
   flex-direction:column;align-items:center;justify-content:center;
@@ -106,16 +93,13 @@ canvas{display:none}
 </div>
 
 <div class="loader" id="loader"></div>
-<canvas id="card"></canvas>
-<img class="card-img" id="cardImg" src="" alt="盲选餐厅入口卡 - 右键保存或长按保存" />
+<canvas id="card" style="display:none"></canvas>
+<img class="card-img" id="cardImg" src="" alt="盲选餐厅入口卡 - 长按或右键保存" style="display:none" />
 
 <div class="btns" id="btns" style="display:none">
   <button class="btn btn-download" id="btnDownload">💾 下载图片</button>
-  <button class="btn btn-copy" id="btnCopy">🔗 复制链接发给朋友</button>
-  <div class="hint">
-    下载 PNG 后直接发微信 / 朋友圈<br>
-    对方扫码即可开始盲选餐厅
-  </div>
+  <button class="btn btn-link" id="btnLink">🔗 复制链接发给朋友</button>
+  <div class="hint">下载 PNG 发微信 / 朋友圈，扫码就能玩</div>
 </div>
 
 <div class="modal" id="modal">
@@ -142,61 +126,121 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
+// Draw a modern minimalist bowl with steam
+function drawBowlIcon(ctx, cx, cy, s) {
+  // Bowl body
+  const bw = s * 0.65, bh = s * 0.45
+  ctx.fillStyle = 'rgba(255,255,255,.85)'
+  ctx.beginPath()
+  ctx.moveTo(cx - bw, cy - bh * 0.2)
+  ctx.quadraticCurveTo(cx - bw * 1.05, cy + bh * 0.6, cx - bw * 0.35, cy + bh)
+  ctx.lineTo(cx + bw * 0.35, cy + bh)
+  ctx.quadraticCurveTo(cx + bw * 1.05, cy + bh * 0.6, cx + bw, cy - bh * 0.2)
+  ctx.closePath()
+  ctx.fill()
+
+  // Bowl rim highlight
+  ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = s * 0.12
+  ctx.beginPath()
+  ctx.moveTo(cx - bw * 0.55, cy - bh * 0.1)
+  ctx.quadraticCurveTo(cx, cy + bh * 0.15, cx + bw * 0.55, cy - bh * 0.1)
+  ctx.stroke()
+
+  // Steam lines
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = s * 0.08; ctx.lineCap = 'round'
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath()
+    ctx.moveTo(cx + i * s * 0.3, cy - bh * 0.4)
+    ctx.quadraticCurveTo(cx + i * s * 0.15, cy - s * 0.7, cx + i * s * 0.3, cy - s * 0.95)
+    ctx.stroke()
+  }
+}
+
+// Draw small food accent shapes
+function drawFoodAccents(ctx, cx, cy) {
+  // Small circle (like a plate/ingredient)
+  const accents = [
+    { x: cx - 50, y: cy - 30, r: 5 },
+    { x: cx + 55, y: cy - 20, r: 7 },
+    { x: cx - 35, y: cy + 45, r: 4 },
+    { x: cx + 40, y: cy + 40, r: 6 },
+    { x: cx - 60, y: cy + 15, r: 3 },
+    { x: cx + 65, y: cy + 10, r: 3.5 },
+  ]
+  ctx.fillStyle = 'rgba(255,255,255,.2)'
+  accents.forEach(a => {
+    ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2); ctx.fill()
+  })
+}
+
 async function draw() {
-  // Background gradient
+  // Background
   const bg = ctx.createLinearGradient(0, 0, W * 0.4, H * 0.45)
   bg.addColorStop(0, '#FF7B42'); bg.addColorStop(0.4, '#FF5E2C'); bg.addColorStop(1, '#E84313')
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
 
-  // Large decorative arcs (off-screen)
-  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 2
-  ctx.beginPath(); ctx.arc(W + 60, -100, 320, 0, Math.PI * 2); ctx.stroke()
-  ctx.beginPath(); ctx.arc(W + 80, -120, 400, 0, Math.PI * 2); ctx.stroke()
-  ctx.beginPath(); ctx.arc(-80, H - 120, 280, 0, Math.PI * 2); ctx.stroke()
+  // ── Orange hero area ──
+  const hY = 130
 
-  // Dot grid — varied sizes for texture
+  // Large off-screen arcs
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(W + 70, -110, 350, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(W - 20, -60, 250, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(-60, H - 100, 260, 0, Math.PI * 2); ctx.stroke()
+
+  // Dot grid with varied sizes
   for (let x = 14; x < W; x += 22) {
     for (let y = 14; y < H; y += 22) {
-      const d = (x + y) % 66 === 0 ? 2.2 : 1.0
-      ctx.fillStyle = `rgba(255,255,255,${d > 2 ? 0.12 : 0.05})`
+      const isLarge = (x + y) % 66 === 0
+      const d = isLarge ? 2.4 : 0.9
+      ctx.fillStyle = `rgba(255,255,255,${isLarge ? 0.13 : 0.05})`
       ctx.beginPath(); ctx.arc(x, y, d, 0, Math.PI * 2); ctx.fill()
     }
   }
 
-  // Sunburst rays behind emoji
-  const hY = 128
-  ctx.save()
-  ctx.globalAlpha = 0.06
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2 - Math.PI / 2
+  // Sunburst from hero center
+  ctx.save(); ctx.globalAlpha = 0.05
+  for (let i = 0; i < 16; i++) {
+    const angle = (i / 16) * Math.PI * 2 - Math.PI / 2
+    const nextAngle = ((i + 0.35) / 16) * Math.PI * 2 - Math.PI / 2
     ctx.beginPath()
     ctx.moveTo(W / 2, hY)
-    ctx.lineTo(W / 2 + Math.cos(angle - 0.12) * 140, hY + Math.sin(angle - 0.12) * 140)
-    ctx.lineTo(W / 2 + Math.cos(angle + 0.12) * 140, hY + Math.sin(angle + 0.12) * 140)
+    ctx.lineTo(W / 2 + Math.cos(angle) * 160, hY + Math.sin(angle) * 160)
+    ctx.lineTo(W / 2 + Math.cos(nextAngle) * 160, hY + Math.sin(nextAngle) * 160)
     ctx.closePath()
     ctx.fillStyle = 'white'; ctx.fill()
   }
   ctx.restore()
 
-  // Outer rings around emoji
-  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1.5
-  ctx.beginPath(); ctx.arc(W / 2, hY, 80, 0, Math.PI * 2); ctx.stroke()
-  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1
-  ctx.beginPath(); ctx.arc(W / 2, hY, 95, 0, Math.PI * 2); ctx.stroke()
+  // Food accent dots around hero
+  drawFoodAccents(ctx, W / 2, hY)
 
-  // Emoji glow
-  ctx.fillStyle = 'rgba(255,255,255,.2)'
-  ctx.beginPath(); ctx.arc(W / 2, hY, 55, 0, Math.PI * 2); ctx.fill()
-  ctx.font = '46px sans-serif'; ctx.textAlign = 'center'
-  ctx.fillText('🥘', W / 2, hY + 16)
+  // Concentric rings
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.arc(W / 2, hY, 82, 0, Math.PI * 2); ctx.stroke()
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.arc(W / 2, hY, 100, 0, Math.PI * 2); ctx.stroke()
+
+  // Glow behind bowl
+  ctx.fillStyle = 'rgba(255,255,255,.22)'
+  ctx.beginPath(); ctx.arc(W / 2, hY, 58, 0, Math.PI * 2); ctx.fill()
+
+  // Bowl icon (modern, drawn)
+  drawBowlIcon(ctx, W / 2, hY, 56)
 
   // Subtitle + title
-  ctx.font = 'bold 12px "PingFang SC","Helvetica Neue",sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,.7)'
-  ctx.fillText('TODAY\'S PICK', W / 2, hY + 90)
+  ctx.font = 'bold 13px "PingFang SC","Helvetica Neue",sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center'
+  ctx.fillText('TODAY\'S PICK', W / 2, hY + 92)
   ctx.font = 'bold 44px "PingFang SC","Hiragino Sans GB",sans-serif'
   ctx.fillStyle = 'white'
-  ctx.fillText('盲选餐厅', W / 2, hY + 148)
+  ctx.fillText('盲选餐厅', W / 2, hY + 150)
+
+  // Small decorative rings in corners of orange area
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.arc(40, 250, 20, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(W - 40, 250, 14, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(70, 260, 8, 0, Math.PI * 2); ctx.stroke()
 
   // ── White card ──
   const cX = 28, cY = 290, cW = W - 56, cH = H - cY - 22
@@ -214,8 +258,8 @@ async function draw() {
   ctx.font = '16px "PingFang SC",sans-serif'; ctx.fillStyle = '#636E72'
   ctx.fillText('一键盲选周边 3km 好评餐厅，匹配你的口味', W / 2, cY + 78)
 
-  // ── QR code (300×300, bigger = easier to scan) ──
-  const qrW = 300, qrX = (W - qrW) / 2, qrY = cY + 102
+  // ── QR code 320×320 ──
+  const qrW = 320, qrX = (W - qrW) / 2, qrY = cY + 100
   const qrData = await QRCode.toDataURL(APP_URL, {
     width: qrW, margin: 1, color: { dark: '#E8551A', light: '#FFFBF5' }
   })
@@ -223,11 +267,11 @@ async function draw() {
   await new Promise(resolve => { qrImg.onload = resolve; qrImg.src = qrData })
   ctx.drawImage(qrImg, qrX, qrY, qrW, qrW)
 
-  ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'
-  ctx.fillText('📱 微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)
+  ctx.font = '14px "PingFang SC",sans-serif'; ctx.fillStyle = '#B2BEC3'; ctx.textAlign = 'center'
+  ctx.fillText('微信扫码 → 开始盲选', W / 2, qrY + qrW + 30)
 
-  // Features
-  const fY = qrY + qrW + 62
+  // Features row
+  const fY = qrY + qrW + 58
   ctx.strokeStyle = '#F0E8DC'; ctx.lineWidth = 1
   ctx.beginPath(); ctx.moveTo(50, fY - 14); ctx.lineTo(W - 50, fY - 14); ctx.stroke()
 
@@ -249,44 +293,50 @@ async function draw() {
   ctx.fillText('让每一餐都有惊喜', W / 2, H - 26)
 }
 
-// Init
+// ── Init ──
 draw().then(() => {
-  // Hide loader, show image + buttons
   document.getElementById('loader').style.display = 'none'
   const dataUrl = canvas.toDataURL('image/png')
   const img = document.getElementById('cardImg')
   img.src = dataUrl
-  img.classList.add('show')
+  img.style.display = 'block'
   document.getElementById('btns').style.display = 'flex'
 
-  // Download button
+  // Download
   document.getElementById('btnDownload').addEventListener('click', () => {
     if (isMobile) {
-      // Mobile: show modal for long-press save
       document.getElementById('modalImg').src = dataUrl
       document.getElementById('modal').classList.add('show')
     } else {
-      // Desktop: direct download
+      // Use toBlob for reliable download on desktop
       canvas.toBlob(blob => {
+        if (!blob) { alert('生成失败，请右键图片保存'); return }
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = url; a.download = '盲选餐厅.png'
-        document.body.appendChild(a); a.click(); document.body.removeChild(a)
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
+        a.href = url; a.download = '盲选餐厅.png'; a.style.display = 'none'
+        document.body.appendChild(a); a.click()
+        setTimeout(() => {
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        }, 200)
       }, 'image/png')
     }
   })
 
-  // Copy link button
-  document.getElementById('btnCopy').addEventListener('click', async () => {
+  // Copy link
+  document.getElementById('btnLink').addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(APP_URL)
-      const btn = document.getElementById('btnCopy')
+      const btn = document.getElementById('btnLink')
       const orig = btn.textContent
-      btn.textContent = '✅ 链接已复制'
-      setTimeout(() => { btn.textContent = orig }, 2000)
+      btn.textContent = '✅ 链接已复制！'
+      btn.style.background = '#E8F5E9'; btn.style.borderColor = '#A5D6A7'; btn.style.color = '#2E7D32'
+      setTimeout(() => {
+        btn.textContent = orig
+        btn.style.background = 'white'; btn.style.borderColor = '#F0E8DC'; btn.style.color = '#E8551A'
+      }, 2000)
     } catch(e) {
-      alert('复制失败，手动复制：' + APP_URL)
+      prompt('手动复制链接：', APP_URL)
     }
   })
 })
